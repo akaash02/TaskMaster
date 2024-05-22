@@ -12,7 +12,7 @@ const CalendarScreen = ({ navigation }) => {
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
-      <View>
+      <ScrollView>
         <View style={styles.calendarContainer}>
           <View style={styles.calendarHeader}>
             <Text style={styles.calendarHeaderText}>My Events</Text>
@@ -53,9 +53,9 @@ const CalendarScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
           </View>
-          {/* You can add your tasks components here */}
+          {}
         </View>
-      </View>
+      </ScrollView>
       <View style={styles.bottomNav}>
         <Icon
           name='home'
