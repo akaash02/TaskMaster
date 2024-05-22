@@ -49,7 +49,6 @@ const TaskScreen = ({ navigation }) => {
   };
 
   const handleSave = () => {
-    // Logic to save the task
     console.log('Task Saved:', {
       startDate: selectedStartDate,
       endDate: selectedEndDate,
