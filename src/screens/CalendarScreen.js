@@ -81,7 +81,7 @@ const CalendarScreen = ({ navigation }) => {
         <Icon
           name='person'
           type='material'
-          onPress={() => console.log('Profile Pressed')}
+          onPress={() => navigation.navigate('Profile')}
           size={30}
           color="#03012E"
         />

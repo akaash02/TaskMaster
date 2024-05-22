@@ -2,17 +2,17 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Header, Icon, Text } from 'react-native-elements';
 
-const FriendsScreen = ({ navigation }) => {
+const ProfileScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header
-        centerComponent={{ text: 'My Friends', style: styles.headerText }}
+        centerComponent={{ text: 'My Profile', style: styles.headerText }}
         containerStyle={styles.headerContainer}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
       <View style={styles.content}>
-        <Text style={styles.title}>You currently have no friends</Text>
+        <Text style={styles.title}>  </Text>
       </View>
       <View style={styles.bottomNav}>
         <Icon
@@ -82,4 +82,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FriendsScreen;
+export default ProfileScreen;
