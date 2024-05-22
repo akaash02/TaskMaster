@@ -18,7 +18,7 @@ const CalendarScreen = ({ navigation }) => {
             <Text style={styles.calendarHeaderText}>My Events</Text>
           </View>
           <Calendar
-            // Customize the calendar theme
+  
             theme={{
               backgroundColor: 'transparent',
               calendarBackground: 'transparent',
