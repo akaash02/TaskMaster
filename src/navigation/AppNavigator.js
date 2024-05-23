@@ -6,18 +6,20 @@ import CalendarScreen from '../screens/CalendarScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import TaskScreen from '../screens/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import LoginScreen from '../screens/LoginScreen';
 
 const Stack = createStackNavigator();
 
 function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Calendar" component={CalendarScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Task" component={TaskScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
