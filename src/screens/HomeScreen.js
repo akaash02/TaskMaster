@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     backgroundColor: '#03012E',
-    paddingBottom: 20, // Add padding bottom to account for bottom navigation
+    paddingBottom: 20, 
   },
   headerContainer: {
     paddingTop: 0,
