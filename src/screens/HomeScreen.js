@@ -1,20 +1,17 @@
 import React from 'react';
 import { View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Header, Icon, Card } from 'react-native-elements';
+import { Calendar } from 'react-native-calendars';
 
 const HomeScreen = ({ navigation }) => {
   const currentDate = new Date();
-
-  // Format the date as "21 May"
   const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-
-  // Format the day as "Tuesday"
   const formattedDay = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
     <View style={styles.container}>
       <Header
-        centerComponent={{ text: 'Hi Akaash!', style: styles.headerText }}
+        centerComponent={{ text: 'Hello Akaash!', style: styles.headerText }}
         containerStyle={styles.headerContainer}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
@@ -31,39 +28,57 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.day}>{formattedDay}</Text>
             </View>
           </Card>
-          <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
-            <Card containerStyle={[styles.card, styles.standardCard]}>
-              <View style={styles.cardContent}>
-                <Icon name="event" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Today's Schedule</Text>
-              </View>
-            </Card>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Task')}>
-        <Card containerStyle={[styles.card, styles.standardCard]}>
-          <View style={styles.cardContent}>
-            <Icon name="add" type="material" size={27} color="#03012E" />
-            <Text style={styles.cardTitle}>Add Task</Text>
-          </View>
-        </Card>
-      </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
-            <Card containerStyle={[styles.card, styles.standardCard]}>
-              <View style={styles.cardContent}>
+
+          <Calendar
+            style={styles.calendar}
+            theme={{
+              backgroundColor: 'transparent',
+              calendarBackground: 'transparent',
+              textSectionTitleColor: '#fff',
+              textSectionTitleDisabledColor: '#d9e1e8',
+              selectedDayBackgroundColor: '#6aa8f2',
+              selectedDayTextColor: '#ffffff',
+              todayTextColor: '#6aa8f2',
+              dayTextColor: '#ffffff',
+              textDisabledColor: '#2d4150',
+              dotColor: '#6aa8f2',
+              selectedDotColor: '#ffffff',
+              arrowColor: '#ffffff',
+              disabledArrowColor: '#d9e1e8',
+              monthTextColor: '#ffffff',
+              indicatorColor: '#ffffff',
+              textDayFontWeight: '300',
+              textMonthFontWeight: 'bold',
+              textDayHeaderFontWeight: '300',
+              textDayFontSize: 16,
+              textMonthFontSize: 16,
+              textDayHeaderFontSize: 16,
+            }}
+          />
+
+          <View style={styles.iconRow}>
+            <TouchableOpacity onPress={() => navigation.navigate('Task')}>
+              <Card containerStyle={[styles.card, styles.iconCard]}>
+                <Icon name="add" type="material" size={27} color="#03012E" />
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
+              <Card containerStyle={[styles.card, styles.iconCard]}>
                 <Icon name="people" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Friends</Text>
-              </View>
-            </Card>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Card containerStyle={[styles.card, styles.standardCard]}>
-              <View style={styles.cardContent}>
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Card containerStyle={[styles.card, styles.iconCard]}>
                 <Icon name="person" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Profile</Text>
-              </View>
-            </Card>
-          </TouchableOpacity>
+              </Card>
+            </TouchableOpacity>
+          </View>
         </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
+        <View style={styles.container}>
+        <Text style={styles.mytasksText}>My Tasks</Text>
+      </View>
+      </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -80,7 +95,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20, // Add padding bottom to account for bottom navigation
   },
   headerContainer: {
-    paddingTop: 40,
+    paddingTop: 0,
     backgroundColor: 'transparent',
     borderBottomWidth: 0,
   },
@@ -92,7 +107,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
   },
   logo: {
@@ -102,7 +116,6 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   card: {
-    width: 400,
     borderRadius: 10,
     padding: 20,
     marginBottom: 20,
@@ -110,35 +123,46 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dateCard: {
-    height: 200, // Adjust height as needed
+    width: 400,
+    height: 100,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
-  standardCard: {
-    height: 100, // Adjust height as needed
+  iconCard: {
+    width: 80,
+    height: 80,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dateTimeContainer: {
     alignItems: 'center',
     width: 200,
   },
   date: {
-    fontSize: 37,
+    fontSize: 25,
     color: '#03012E',
     fontWeight: 'bold',
   },
   day: {
-    fontSize: 32,
+    fontSize: 20,
     color: '#03012E',
   },
-  cardContent: {
+  iconRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '75%',
+    marginTop: 20,
   },
-  cardTitle: {
-    fontSize: 34, // Adjust font size as needed
-    color: '#03012E',
+  calendar: {
+    marginVertical: 0,
+    marginHorizontal: 0,
+  },
+  mytasksText: {
+    color: '#fff',
+    fontSize: 25,
+    textAlign: 'left',
     fontWeight: 'bold',
-    marginLeft: 10,
+    paddingLeft: 20,
   },
 });
 
