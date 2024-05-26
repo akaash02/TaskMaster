@@ -28,34 +28,6 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.day}>{formattedDay}</Text>
             </View>
           </Card>
-
-          <Calendar
-            style={styles.calendar}
-            theme={{
-              backgroundColor: 'transparent',
-              calendarBackground: 'transparent',
-              textSectionTitleColor: '#fff',
-              textSectionTitleDisabledColor: '#d9e1e8',
-              selectedDayBackgroundColor: '#6aa8f2',
-              selectedDayTextColor: '#ffffff',
-              todayTextColor: '#6aa8f2',
-              dayTextColor: '#ffffff',
-              textDisabledColor: '#2d4150',
-              dotColor: '#6aa8f2',
-              selectedDotColor: '#ffffff',
-              arrowColor: '#ffffff',
-              disabledArrowColor: '#d9e1e8',
-              monthTextColor: '#ffffff',
-              indicatorColor: '#ffffff',
-              textDayFontWeight: '300',
-              textMonthFontWeight: 'bold',
-              textDayHeaderFontWeight: '300',
-              textDayFontSize: 16,
-              textMonthFontSize: 16,
-              textDayHeaderFontSize: 16,
-            }}
-          />
-
           <View style={styles.iconRow}>
             <TouchableOpacity onPress={() => navigation.navigate('Task')}>
               <Card containerStyle={[styles.card, styles.iconCard]}>
@@ -77,8 +49,8 @@ const HomeScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
         <View style={styles.container}>
         <Text style={styles.mytasksText}>My Tasks</Text>
-      </View>
-      </TouchableOpacity>
+        </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

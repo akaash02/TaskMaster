@@ -3,13 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../config/firebaseConfig'; // Adjust the path as necessary
+import { auth } from '../config/firebaseConfig';
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import TaskScreen from '../screens/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import LoginScreen from '../screens/LoginScreen'; // Adjust the path as necessary
+import LoginScreen from '../screens/LoginScreen'; 
 
 const Stack = createStackNavigator();
 
