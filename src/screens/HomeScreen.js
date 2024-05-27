@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Header, Icon, Card } from 'react-native-elements';
-import { Calendar } from 'react-native-calendars';
+import { auth, firestore } from '../config/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const HomeScreen = ({ navigation }) => {
+  const [userName, setUserName] = useState('');
+  const [userId, setUserId] = useState('');
+
+  useEffect(() => {
+    const fetchUserName = async (userId) => {
+      try {
+        const userDoc = await getDoc(doc(firestore, 'users', userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserName(userData.name);
+        }
+      } catch (error) {
+        console.error('Error fetching user name:', error.message);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+        fetchUserName(user.uid);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   const formattedDay = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
@@ -11,7 +39,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header
-        centerComponent={{ text: 'Hello Akaash!', style: styles.headerText }}
+        centerComponent={{ text: `Hello ${userName}!`, style: styles.headerText }}
         containerStyle={styles.headerContainer}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
@@ -29,7 +57,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </Card>
           <View style={styles.iconRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('Task')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Task', { userId, scheduleId: 'yourScheduleId' })}>
               <Card containerStyle={[styles.card, styles.iconCard]}>
                 <Icon name="add" type="material" size={27} color="#03012E" />
               </Card>
@@ -47,9 +75,9 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
-        <View style={styles.container}>
-        <Text style={styles.mytasksText}>My Tasks</Text>
-        </View>
+          <View style={styles.container}>
+            <Text style={styles.mytasksText}>My Tasks</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </View>

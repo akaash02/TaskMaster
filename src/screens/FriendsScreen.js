@@ -25,7 +25,7 @@ const FriendsScreen = ({ navigation }) => {
         <Icon
           name='calendar-today'
           type='material'
-          onPress={() => navigation.navigate('Calendar')}
+          onPress={() => navigation.navigate('Calendar', { userId: 'yourUserId', scheduleId: 'yourScheduleId' })}
           size={30}
           color="#03012E"
         />

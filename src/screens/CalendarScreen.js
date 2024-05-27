@@ -1,9 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Header, Icon, Text } from 'react-native-elements';
 import { Calendar } from 'react-native-calendars';
+import { firestore } from '../config/firebaseConfig';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
-const CalendarScreen = ({ navigation }) => {
+const CalendarScreen = ({ navigation, route }) => {
+  const { userId, scheduleId } = route.params;
+  
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const q = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
+        const querySnapshot = await getDocs(q);
+        const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTasks(tasksList);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+
+    fetchTasks();
+  }, [userId, scheduleId]);
+
+  const renderTasksForDate = (date) => {
+    const tasksForDate = tasks.filter(
+      task => new Date(task.dueDate.toDate()).toDateString() === date.toDateString()
+    );
+    return tasksForDate.map(task => (
+      <View key={task.id} style={styles.taskItem}>
+        <Text style={styles.taskText}>Title: {task.title}</Text>
+        <Text style={styles.taskText}>Description: {task.description}</Text>
+        <Text style={styles.taskText}>Priority: {task.priority}</Text>
+        <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+        {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
+      </View>
+    ));
+  };
+
   return (
     <View style={styles.container}>
       <Header
@@ -18,7 +54,6 @@ const CalendarScreen = ({ navigation }) => {
             <Text style={styles.calendarHeaderText}>My Events</Text>
           </View>
           <Calendar
-  
             theme={{
               backgroundColor: 'transparent',
               calendarBackground: 'transparent',
@@ -42,18 +77,31 @@ const CalendarScreen = ({ navigation }) => {
               textMonthFontSize: 16,
               textDayHeaderFontSize: 16
             }}
+            onDayPress={(day) => {
+              console.log('selected day', day);
+              renderTasksForDate(new Date(day.timestamp));
+            }}
           />
         </View>
         <View style={styles.tasksContainer}>
           <View style={styles.tasksHeader}>
             <Text style={styles.tasksHeaderText}>My Tasks</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Task')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Task', { userId, scheduleId })}>
               <View style={styles.addTaskButton}>
                 <Text style={styles.addTaskButtonText}>+</Text>
               </View>
             </TouchableOpacity>
           </View>
-          {}
+          {tasks.map(task => (
+            <View key={task.id} style={styles.taskItem}>
+              <Text style={styles.taskText}>Title: {task.title}</Text>
+              <Text style={styles.taskText}>Description: {task.description}</Text>
+              <Text style={styles.taskText}>Priority: {task.priority}</Text>
+              <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+              {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
+              <Text style={styles.taskText}>{task.dueDate.toDate().toDateString()}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
       <View style={styles.bottomNav}>
@@ -67,7 +115,7 @@ const CalendarScreen = ({ navigation }) => {
         <Icon
           name='calendar-today'
           type='material'
-          onPress={() => navigation.navigate('Calendar')}
+          onPress={() => navigation.navigate('Calendar', { userId, scheduleId: 'yourScheduleId' })}
           size={30}
           color="#03012E"
         />
@@ -141,6 +189,15 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  taskItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  taskText: {
+    color: '#fff',
   },
   bottomNav: {
     flexDirection: 'row',

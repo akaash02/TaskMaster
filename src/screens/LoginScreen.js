@@ -1,26 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { auth } from '../config/firebaseConfig';
+import { auth, firestore } from '../config/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState(null);
   const [isLogin, setIsLogin] = useState(true);
+  const [userName, setUserName] = useState('');
   const navigation = useNavigation();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
+        const profileData = await getUserProfile(user.uid);
+        console.log('Fetched user profile data:', profileData);
+        setUserName(profileData.name || '');
         navigation.replace('Home');
       }
     });
 
     return () => unsubscribe();
   }, [navigation]);
+
+  const createUserProfile = async (user) => {
+    try {
+      await setDoc(doc(firestore, 'users', user.uid), {
+        name: userName,
+        email: user.email,
+        profilePicture: '',
+        friends: [],
+        analytics: {
+          timeSpentOnTasks: {},
+          productiveHours: 0,
+          breaksTaken: 0,
+          averageCompletionTime: 0,
+        },
+      });
+      console.log('User profile created in Firestore!');
+    } catch (error) {
+      console.error('Error creating user profile: ', error.message);
+    }
+  };
+
+  const getUserProfile = async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(firestore, 'users', userId));
+      if (userDoc.exists()) {
+        console.log('User profile data: ', userDoc.data());
+        return userDoc.data();
+      } else {
+        console.log('No user profile found!');
+        return {};
+      }
+    } catch (error) {
+      console.error('Error getting user profile: ', error.message);
+      return {};
+    }
+  };
 
   const handleAuthentication = async () => {
     try {
@@ -32,7 +73,8 @@ const LoginScreen = () => {
           await signInWithEmailAndPassword(auth, email, password);
           console.log('User signed in successfully!');
         } else {
-          await createUserWithEmailAndPassword(auth, email, password);
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          await createUserProfile(userCredential.user);
           console.log('User created successfully!');
         }
       }
@@ -92,6 +134,15 @@ const LoginScreen = () => {
             secureTextEntry
             placeholderTextColor="#ffffff"
           />
+          {!isLogin && (
+            <TextInput
+              style={styles.input}
+              value={userName}
+              onChangeText={setUserName}
+              placeholder="Name"
+              placeholderTextColor="#ffffff"
+            />
+          )}
           {isLogin && (
             <View style={styles.buttonContainer}>
               <Button title="Forgot Password?" onPress={handlePasswordReset} color="#e74c3c" />
