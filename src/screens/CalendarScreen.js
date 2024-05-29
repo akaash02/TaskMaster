@@ -1,42 +1,49 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Header, Icon, Text } from 'react-native-elements';
 import { Calendar } from 'react-native-calendars';
 import { firestore } from '../config/firebaseConfig';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CalendarScreen = ({ navigation, route }) => {
   const { userId, scheduleId } = route.params;
   
   const [tasks, setTasks] = useState([]);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const q = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
-        const querySnapshot = await getDocs(q);
-        const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setTasks(tasksList);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchTasks = async () => {
+        try {
+          const q = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
+          const querySnapshot = await getDocs(q);
+          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setTasks(tasksList);
+        } catch (error) {
+          console.error('Error fetching tasks:', error);
+        }
+      };
 
-    fetchTasks();
-  }, [userId, scheduleId]);
+      fetchTasks();
+    }, [userId, scheduleId])
+  );
 
   const renderTasksForDate = (date) => {
     const tasksForDate = tasks.filter(
       task => new Date(task.dueDate.toDate()).toDateString() === date.toDateString()
     );
     return tasksForDate.map(task => (
-      <View key={task.id} style={styles.taskItem}>
-        <Text style={styles.taskText}>Title: {task.title}</Text>
-        <Text style={styles.taskText}>Description: {task.description}</Text>
-        <Text style={styles.taskText}>Priority: {task.priority}</Text>
-        <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-        {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
-      </View>
+      <TouchableOpacity 
+        key={task.id} 
+        onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+        <View style={styles.taskItem}>
+          <Text style={styles.taskText}>Title: {task.title}</Text>
+          <Text style={styles.taskText}>Description: {task.description}</Text>
+          <Text style={styles.taskText}>Priority: {task.priority}</Text>
+          <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+          {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
+        </View>
+      </TouchableOpacity>
     ));
   };
 
@@ -93,14 +100,18 @@ const CalendarScreen = ({ navigation, route }) => {
             </TouchableOpacity>
           </View>
           {tasks.map(task => (
-            <View key={task.id} style={styles.taskItem}>
-              <Text style={styles.taskText}>Title: {task.title}</Text>
-              <Text style={styles.taskText}>Description: {task.description}</Text>
-              <Text style={styles.taskText}>Priority: {task.priority}</Text>
-              <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-              {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
-              <Text style={styles.taskText}>{task.dueDate.toDate().toDateString()}</Text>
-            </View>
+            <TouchableOpacity 
+              key={task.id} 
+              onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+              <View style={styles.taskItem}>
+                <Text style={styles.taskText}>Title: {task.title}</Text>
+                <Text style={styles.taskText}>Description: {task.description}</Text>
+                <Text style={styles.taskText}>Priority: {task.priority}</Text>
+                <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+                {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
+                <Text style={styles.taskText}>{task.dueDate.toDate().toDateString()}</Text>
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>

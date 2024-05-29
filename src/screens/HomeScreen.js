@@ -1,36 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Header, Icon, Card } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
 
 const HomeScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const scheduleId = 'yourScheduleId'; // Assume this is static for now
 
   useEffect(() => {
-    const fetchUserName = async (userId) => {
-      try {
-        const userDoc = await getDoc(doc(firestore, 'users', userId));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUserName(userData.name);
-        }
-      } catch (error) {
-        console.error('Error fetching user name:', error.message);
-      }
-    };
-
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserId(user.uid);
-        fetchUserName(user.uid);
       }
     });
-
     return () => unsubscribe();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserName = async (userId) => {
+        try {
+          const userDoc = await getDoc(doc(firestore, 'users', userId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserName(userData.name);
+          }
+        } catch (error) {
+          console.error('Error fetching user name:', error.message);
+        }
+      };
+
+      const fetchTasks = async (userId) => {
+        try {
+          const q = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
+          const querySnapshot = await getDocs(q);
+          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setTasks(tasksList);
+        } catch (error) {
+          console.error('Error fetching tasks:', error.message);
+        }
+      };
+
+      if (userId) {
+        fetchUserName(userId);
+        fetchTasks(userId);
+      }
+    }, [userId])
+  );
 
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
@@ -57,7 +78,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </Card>
           <View style={styles.iconRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('Task', { userId, scheduleId: 'yourScheduleId' })}>
+            <TouchableOpacity onPress={() => navigation.navigate('Task', { userId, scheduleId })}>
               <Card containerStyle={[styles.card, styles.iconCard]}>
                 <Icon name="add" type="material" size={27} color="#03012E" />
               </Card>
@@ -73,12 +94,24 @@ const HomeScreen = ({ navigation }) => {
               </Card>
             </TouchableOpacity>
           </View>
-        </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
-          <View style={styles.container}>
+          <TouchableOpacity onPress={() => navigation.navigate('Calendar', { userId, scheduleId })}>
             <Text style={styles.mytasksText}>My Tasks</Text>
+          </TouchableOpacity>
+          <View style={styles.tasksContainer}>
+            {tasks.map(task => (
+              <TouchableOpacity key={task.id} onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+                <View style={styles.taskItem}>
+                  <Text style={styles.taskText}>Title: {task.title || 'No title'}</Text>
+                  <Text style={styles.taskText}>Description: {task.description || 'No description'}</Text>
+                  <Text style={styles.taskText}>Priority: {task.priority || 'No priority'}</Text>
+                  <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+                  {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval || 'No interval'}</Text>}
+                  <Text style={styles.taskText}>Due Date: {task.dueDate ? task.dueDate.toDate().toDateString() : 'No due date'}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
-        </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -92,7 +125,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     backgroundColor: '#03012E',
-    paddingBottom: 20, 
+    paddingBottom: 20,
   },
   headerContainer: {
     paddingTop: 0,
@@ -153,9 +186,19 @@ const styles = StyleSheet.create({
     width: '75%',
     marginTop: 20,
   },
-  calendar: {
-    marginVertical: 0,
-    marginHorizontal: 0,
+  tasksContainer: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  taskItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    width: '100%',
+  },
+  taskText: {
+    color: '#fff',
   },
   mytasksText: {
     color: '#fff',
