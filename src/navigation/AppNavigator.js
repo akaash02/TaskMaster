@@ -10,7 +10,9 @@ import TaskScreen from '../screens/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ForgotScreen from '../screens/ForgotScreen';
-import ViewScreen from '../screens/ViewScreen'; // Import the ViewScreen
+import ViewScreen from '../screens/ViewScreen';
+import EventScreen from '../screens/EventScreen';
+import ViewEventScreen from '../screens/ViewEventScreen';
 
 const Stack = createStackNavigator();
 
@@ -36,6 +38,8 @@ function AppNavigator() {
         <Stack.Screen name="Task" component={TaskScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
         <Stack.Screen name="View" component={ViewScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Event" component={EventScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ViewEvent" component={ViewEventScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

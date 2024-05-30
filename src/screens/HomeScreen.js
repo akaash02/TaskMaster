@@ -5,12 +5,13 @@ import { auth, firestore } from '../config/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
-
+import CircularDropdown from '../components/CircularDropdown';
 const HomeScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState('');
   const [tasks, setTasks] = useState([]);
-  const scheduleId = 'yourScheduleId'; // Assume this is static for now
+  const [events, setEvents] = useState([]);
+  const scheduleId = 'yourScheduleId';
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -35,20 +36,26 @@ const HomeScreen = ({ navigation }) => {
         }
       };
 
-      const fetchTasks = async (userId) => {
+      const fetchTasksAndEvents = async (userId) => {
         try {
-          const q = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
-          const querySnapshot = await getDocs(q);
-          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const tasksQuery = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
+          const eventsQuery = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'events'));
+
+          const [tasksSnapshot, eventsSnapshot] = await Promise.all([getDocs(tasksQuery), getDocs(eventsQuery)]);
+
+          const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
           setTasks(tasksList);
+          setEvents(eventsList);
         } catch (error) {
-          console.error('Error fetching tasks:', error.message);
+          console.error('Error fetching tasks and events:', error.message);
         }
       };
 
       if (userId) {
         fetchUserName(userId);
-        fetchTasks(userId);
+        fetchTasksAndEvents(userId);
       }
     }, [userId])
   );
@@ -56,6 +63,14 @@ const HomeScreen = ({ navigation }) => {
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   const formattedDay = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+  const handleDropdownSelect = (option) => {
+    if (option.value === 'task') {
+      navigation.navigate('Task', { userId, scheduleId });
+    } else if (option.value === 'event') {
+      navigation.navigate('Event', { userId, scheduleId });
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -78,11 +93,14 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </Card>
           <View style={styles.iconRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('Task', { userId, scheduleId })}>
-              <Card containerStyle={[styles.card, styles.iconCard]}>
-                <Icon name="add" type="material" size={27} color="#03012E" />
-              </Card>
-            </TouchableOpacity>
+            <CircularDropdown
+              icon="add"
+              options={[
+                { label: 'Task', value: 'task' },
+                { label: 'Event', value: 'event' },
+              ]}
+              onSelect={handleDropdownSelect}
+            />
             <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
               <Card containerStyle={[styles.card, styles.iconCard]}>
                 <Icon name="people" type="material" size={27} color="#03012E" />
@@ -95,11 +113,11 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Calendar', { userId, scheduleId })}>
-            <Text style={styles.mytasksText}>My Tasks</Text>
+            <Text style={styles.mytasksText}>My Tasks & Events</Text>
           </TouchableOpacity>
           <View style={styles.tasksContainer}>
             {tasks.map(task => (
-              <TouchableOpacity key={task.id} onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+              <TouchableOpacity key={task.id} onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
                 <View style={styles.taskItem}>
                   <Text style={styles.taskText}>Title: {task.title || 'No title'}</Text>
                   <Text style={styles.taskText}>Description: {task.description || 'No description'}</Text>
@@ -107,6 +125,19 @@ const HomeScreen = ({ navigation }) => {
                   <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
                   {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval || 'No interval'}</Text>}
                   <Text style={styles.taskText}>Due Date: {task.dueDate ? task.dueDate.toDate().toDateString() : 'No due date'}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            {events.map(event => (
+              <TouchableOpacity key={event.id} onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
+                <View style={styles.taskItem}>
+                  <Text style={styles.taskText}>Title: {event.title || 'No title'}</Text>
+                  <Text style={styles.taskText}>Location: {event.location || 'No location'}</Text>
+                  <Text style={styles.taskText}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
+                  <Text style={styles.taskText}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
+                  <Text style={styles.taskText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
+                  <Text style={styles.taskText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
+                  {event.repeat && <Text style={styles.taskText}>Repeat Interval: {event.repeatInterval || 'No interval'}</Text>}
                 </View>
               </TouchableOpacity>
             ))}
@@ -160,52 +191,48 @@ const styles = StyleSheet.create({
     height: 100,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 20,
+  },
   iconCard: {
     width: 80,
     height: 80,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   dateTimeContainer: {
     alignItems: 'center',
-    width: 200,
   },
   date: {
-    fontSize: 25,
     color: '#03012E',
+    fontSize: 30,
     fontWeight: 'bold',
   },
   day: {
-    fontSize: 20,
     color: '#03012E',
+    fontSize: 18,
   },
-  iconRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '75%',
-    marginTop: 20,
+  mytasksText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   tasksContainer: {
-    paddingHorizontal: 20,
-    marginTop: 10,
+    width: '90%',
+    alignItems: 'center',
   },
   taskItem: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
-    width: '100%',
+    width: 400,
   },
   taskText: {
-    color: '#fff',
-  },
-  mytasksText: {
-    color: '#fff',
-    fontSize: 25,
-    textAlign: 'left',
-    fontWeight: 'bold',
-    paddingLeft: 20,
+    color: 'black',
   },
 });
 

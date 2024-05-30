@@ -1,50 +1,89 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Header, Icon, Text } from 'react-native-elements';
+import { Header, Text, Icon } from 'react-native-elements';
 import { Calendar } from 'react-native-calendars';
 import { firestore } from '../config/firebaseConfig';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
+import CircularDropdown from '../components/CircularDropdown';
 
 const CalendarScreen = ({ navigation, route }) => {
   const { userId, scheduleId } = route.params;
-  
   const [tasks, setTasks] = useState([]);
+  const [events, setEvents] = useState([]);
 
   useFocusEffect(
     React.useCallback(() => {
-      const fetchTasks = async () => {
+      const fetchTasksAndEvents = async () => {
         try {
-          const q = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
-          const querySnapshot = await getDocs(q);
-          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const tasksQuery = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
+          const eventsQuery = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'events'));
+
+          const [tasksSnapshot, eventsSnapshot] = await Promise.all([getDocs(tasksQuery), getDocs(eventsQuery)]);
+
+          const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
           setTasks(tasksList);
+          setEvents(eventsList);
         } catch (error) {
-          console.error('Error fetching tasks:', error);
+          console.error('Error fetching tasks and events:', error);
         }
       };
 
-      fetchTasks();
+      fetchTasksAndEvents();
     }, [userId, scheduleId])
   );
 
-  const renderTasksForDate = (date) => {
+  const renderItemsForDate = (date) => {
     const tasksForDate = tasks.filter(
       task => new Date(task.dueDate.toDate()).toDateString() === date.toDateString()
     );
-    return tasksForDate.map(task => (
-      <TouchableOpacity 
-        key={task.id} 
-        onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
-        <View style={styles.taskItem}>
-          <Text style={styles.taskText}>Title: {task.title}</Text>
-          <Text style={styles.taskText}>Description: {task.description}</Text>
-          <Text style={styles.taskText}>Priority: {task.priority}</Text>
-          <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-          {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
-        </View>
-      </TouchableOpacity>
-    ));
+
+    const eventsForDate = events.filter(
+      event => new Date(event.startTime.toDate()).toDateString() === date.toDateString()
+    );
+
+    return (
+      <>
+        {tasksForDate.map(task => (
+          <TouchableOpacity 
+            key={task.id} 
+            onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
+            <View style={styles.item}>
+              <Text style={styles.itemText}>Title: {task.title}</Text>
+              <Text style={styles.itemText}>Description: {task.description}</Text>
+              <Text style={styles.itemText}>Priority: {task.priority}</Text>
+              <Text style={styles.itemText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+              {task.repeat && <Text style={styles.itemText}>Repeat Interval: {task.repeatInterval}</Text>}
+            </View>
+          </TouchableOpacity>
+        ))}
+        {eventsForDate.map(event => (
+          <TouchableOpacity 
+            key={event.id} 
+            onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
+            <View style={styles.item}>
+              <Text style={styles.itemText}>Title: {event.title}</Text>
+              <Text style={styles.itemText}>Location: {event.location}</Text>
+              <Text style={styles.itemText}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
+              <Text style={styles.itemText}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
+              <Text style={styles.itemText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
+              <Text style={styles.itemText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
+              {event.repeat && <Text style={styles.itemText}>Repeat Interval: {event.repeatInterval}</Text>}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </>
+    );
+  };
+
+  const handleDropdownSelect = (option) => {
+    if (option.value === 'task') {
+      navigation.navigate('Task', { userId, scheduleId });
+    } else if (option.value === 'event') {
+      navigation.navigate('Event', { userId, scheduleId });
+    }
   };
 
   return (
@@ -58,7 +97,6 @@ const CalendarScreen = ({ navigation, route }) => {
       <ScrollView>
         <View style={styles.calendarContainer}>
           <View style={styles.calendarHeader}>
-            <Text style={styles.calendarHeaderText}>My Events</Text>
           </View>
           <Calendar
             theme={{
@@ -86,30 +124,48 @@ const CalendarScreen = ({ navigation, route }) => {
             }}
             onDayPress={(day) => {
               console.log('selected day', day);
-              renderTasksForDate(new Date(day.timestamp));
+              renderItemsForDate(new Date(day.timestamp));
             }}
           />
         </View>
         <View style={styles.tasksContainer}>
           <View style={styles.tasksHeader}>
-            <Text style={styles.tasksHeaderText}>My Tasks</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Task', { userId, scheduleId })}>
-              <View style={styles.addTaskButton}>
-                <Text style={styles.addTaskButtonText}>+</Text>
-              </View>
-            </TouchableOpacity>
+            <Text style={styles.tasksHeaderText}>My Tasks & Events</Text>
+            <CircularDropdown
+              icon="add"
+              options={[
+                { label: 'Task', value: 'task' },
+                { label: 'Event', value: 'event' },
+              ]}
+              onSelect={handleDropdownSelect}
+            />
           </View>
           {tasks.map(task => (
             <TouchableOpacity 
               key={task.id} 
-              onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
-              <View style={styles.taskItem}>
-                <Text style={styles.taskText}>Title: {task.title}</Text>
-                <Text style={styles.taskText}>Description: {task.description}</Text>
-                <Text style={styles.taskText}>Priority: {task.priority}</Text>
-                <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-                {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval}</Text>}
-                <Text style={styles.taskText}>{task.dueDate.toDate().toDateString()}</Text>
+              onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
+              <View style={styles.item}>
+                <Text style={styles.itemText}>Title: {task.title}</Text>
+                <Text style={styles.itemText}>Description: {task.description}</Text>
+                <Text style={styles.itemText}>Priority: {task.priority}</Text>
+                <Text style={styles.itemText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+                {task.repeat && <Text style={styles.itemText}>Repeat Interval: {task.repeatInterval}</Text>}
+                <Text style={styles.itemText}>{task.dueDate.toDate().toDateString()}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {events.map(event => (
+            <TouchableOpacity 
+              key={event.id} 
+              onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
+              <View style={styles.item}>
+                <Text style={styles.itemText}>Title: {event.title}</Text>
+                <Text style={styles.itemText}>Location: {event.location}</Text>
+                <Text style={styles.itemText}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
+                <Text style={styles.itemText}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
+                <Text style={styles.itemText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
+                <Text style={styles.itemText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
+                {event.repeat && <Text style={styles.itemText}>Repeat Interval: {event.repeatInterval}</Text>}
               </View>
             </TouchableOpacity>
           ))}
@@ -117,29 +173,29 @@ const CalendarScreen = ({ navigation, route }) => {
       </ScrollView>
       <View style={styles.bottomNav}>
         <Icon
-          name='home'
-          type='material'
+          name="home"
+          type="material"
           onPress={() => navigation.navigate('Home')}
           size={30}
           color="#03012E"
         />
         <Icon
-          name='calendar-today'
-          type='material'
+          name="calendar-today"
+          type="material"
           onPress={() => navigation.navigate('Calendar', { userId, scheduleId: 'yourScheduleId' })}
           size={30}
           color="#03012E"
         />
         <Icon
-          name='people'
-          type='material'
+          name="people"
+          type="material"
           onPress={() => navigation.navigate('Friends')}
           size={30}
           color="#03012E"
         />
         <Icon
-          name='person'
-          type='material'
+          name="person"
+          type="material"
           onPress={() => navigation.navigate('Profile')}
           size={30}
           color="#03012E"
@@ -161,54 +217,40 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: '#fff',
-    fontSize: 30,
-    textAlign: 'left',
+    fontSize: 24,
     fontWeight: 'bold',
   },
   calendarContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  calendarHeader: {
-    marginBottom: 20,
-  },
-  calendarHeaderText: {
-    color: '#fff',
-    fontSize: 30,
-    fontWeight: 'bold',
+    marginHorizontal: 20,
+    backgroundColor: 'transparent',
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginTop: 20,
   },
   tasksContainer: {
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
     marginTop: 20,
   },
   tasksHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
   tasksHeaderText: {
     color: '#fff',
-    fontSize: 30,
+    fontSize: 20,
     fontWeight: 'bold',
   },
-  addTaskButton: {
-    backgroundColor: 'transparent',
-    padding: 10,
-  },
-  addTaskButtonText: {
-    fontSize: 30,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  taskItem: {
+  item: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 10,
     padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
+    marginBottom: 10,
   },
-  taskText: {
-    color: '#fff',
+  itemText: {
+    color: 'black',
+    fontSize: 16,
   },
   bottomNav: {
     flexDirection: 'row',
