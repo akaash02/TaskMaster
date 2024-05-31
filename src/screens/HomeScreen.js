@@ -117,7 +117,7 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
           <View style={styles.tasksContainer}>
             {tasks.map(task => (
-              <TouchableOpacity key={task.id} onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
+              <TouchableOpacity key={task.id} onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
                 <View style={styles.taskItem}>
                   <Text style={styles.taskText}>Title: {task.title || 'No title'}</Text>
                   <Text style={styles.taskText}>Description: {task.description || 'No description'}</Text>

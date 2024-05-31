@@ -143,7 +143,7 @@ const CalendarScreen = ({ navigation, route }) => {
           {tasks.map(task => (
             <TouchableOpacity 
               key={task.id} 
-              onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
+              onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
               <View style={styles.item}>
                 <Text style={styles.itemText}>Title: {task.title}</Text>
                 <Text style={styles.itemText}>Description: {task.description}</Text>
