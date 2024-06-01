@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { firestore } from '../config/firebaseConfig';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { Card } from 'react-native-elements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
 const CustomButton = ({ title, onPress, color }) => (
   <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress}>
@@ -13,18 +15,45 @@ const CustomButton = ({ title, onPress, color }) => (
 const ViewEventScreen = ({ navigation, route }) => {
   const { userId, scheduleId, eventId } = route.params;
   const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const eventDoc = await getDoc(doc(firestore, 'users', userId, 'schedules', scheduleId, 'events', eventId));
-        if (eventDoc.exists()) {
-          setEvent(eventDoc.data());
+        // Fetch event from AsyncStorage
+        console.log('Fetching event from AsyncStorage');
+        const cachedEvent = await AsyncStorage.getItem(`event_${eventId}`);
+        if (cachedEvent) {
+          console.log('Cached event found');
+          setEvent(JSON.parse(cachedEvent));
+          setLoading(false); // Stop loading spinner when cached data is found
         } else {
-          console.log('No such document!');
+          console.log('No cached event found');
+        }
+
+        // Check network status and fetch from Firestore if online
+        const netInfo = await NetInfo.fetch();
+        if (netInfo.isConnected) {
+          console.log('Fetching event from Firestore');
+          const eventDoc = await getDoc(doc(firestore, 'users', userId, 'schedules', scheduleId, 'events', eventId));
+          if (eventDoc.exists()) {
+            const eventData = eventDoc.data();
+            setEvent(eventData);
+            await AsyncStorage.setItem(`event_${eventId}`, JSON.stringify(eventData));
+          } else {
+            console.log('No such document!');
+            if (!cachedEvent) {
+              Alert.alert('Error', 'Event not found and no cached data available.');
+            }
+          }
+        } else if (!cachedEvent) {
+          Alert.alert('Error', 'No internet connection and no cached data available.');
         }
       } catch (error) {
         console.error('Error fetching event:', error);
+        Alert.alert('Error', 'Error fetching event data.');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -33,17 +62,37 @@ const ViewEventScreen = ({ navigation, route }) => {
 
   const deleteEvent = async () => {
     try {
-      await deleteDoc(doc(firestore, 'users', userId, 'schedules', scheduleId, 'events', eventId));
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        await deleteDoc(doc(firestore, 'users', userId, 'schedules', scheduleId, 'events', eventId));
+      }
+      await AsyncStorage.removeItem(`event_${eventId}`);
       navigation.goBack();
     } catch (error) {
       console.error('Error deleting event:', error);
+      Alert.alert('Error', 'Error deleting event. Please try again.');
     }
   };
+
+  const formatDateTime = (timestamp) => {
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate().toLocaleString();
+    }
+    return 'No Date';
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   if (!event) {
     return (
       <View style={styles.container}>
-        <Text>Loading...</Text>
+        <Text style={styles.text}>Event not found.</Text>
       </View>
     );
   }
@@ -60,13 +109,13 @@ const ViewEventScreen = ({ navigation, route }) => {
       <Text style={styles.header}>Start Time</Text>
       <Card containerStyle={styles.card}>
         <Text style={styles.text}>
-          {event.startTime ? event.startTime.toDate().toLocaleString() : 'No Start Time'}
+          {formatDateTime(event.startTime)}
         </Text>
       </Card>
       <Text style={styles.header}>End Time</Text>
       <Card containerStyle={styles.card}>
         <Text style={styles.text}>
-          {event.endTime ? event.endTime.toDate().toLocaleString() : 'No End Time'}
+          {formatDateTime(event.endTime)}
         </Text>
       </Card>
       <Text style={styles.header}>All Day</Text>

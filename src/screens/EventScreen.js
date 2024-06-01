@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { Text, Icon, Card } from 'react-native-elements';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
+import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { firestore } from '../config/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+import { CommonActions } from '@react-navigation/native';
 
 const EventScreen = ({ navigation, route }) => {
   const userId = route?.params?.userId;
@@ -22,38 +25,74 @@ const EventScreen = ({ navigation, route }) => {
   const [allDay, setAllDay] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState(1);
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisibility] = useState(false);
   const [isEndTimePickerVisible, setEndTimePickerVisibility] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const showStartTimePicker = () => {
-    setStartTimePickerVisibility(true);
+  useEffect(() => {
+    const loadDraftEvent = async () => {
+      try {
+        const draftEvent = await AsyncStorage.getItem(`draftEvent-${userId}-${scheduleId}`);
+        if (draftEvent) {
+          const parsedEvent = JSON.parse(draftEvent);
+          setTitle(parsedEvent.title);
+          setLocation(parsedEvent.location);
+          setStartTime(new Date(parsedEvent.startTime));
+          setEndTime(new Date(parsedEvent.endTime));
+          setAllDay(parsedEvent.allDay);
+          setRepeat(parsedEvent.repeat);
+          setRepeatInterval(parsedEvent.repeatInterval);
+        }
+      } catch (error) {
+        console.error('Error loading draft event:', error);
+      }
+    };
+    loadDraftEvent();
+  }, [userId, scheduleId]);
+
+  const saveDraftEvent = async () => {
+    const eventData = {
+      title,
+      location,
+      startTime: startTime?.toISOString(),
+      endTime: endTime?.toISOString(),
+      allDay,
+      repeat,
+      repeatInterval,
+    };
+    try {
+      await AsyncStorage.setItem(`draftEvent-${userId}-${scheduleId}`, JSON.stringify(eventData));
+      console.log('Draft event saved:', eventData);
+      Alert.alert('Draft Saved', 'Draft event has been saved locally.');
+      navigation.dispatch(CommonActions.navigate('Home'));
+    } catch (error) {
+      console.error('Error saving draft event:', error);
+      Alert.alert('Error', 'Error saving draft event.');
+    }
   };
 
-  const hideStartTimePicker = () => {
-    setStartTimePickerVisibility(false);
-  };
-
-  const showEndTimePicker = () => {
-    setEndTimePickerVisibility(true);
-  };
-
-  const hideEndTimePicker = () => {
-    setEndTimePickerVisibility(false);
-  };
-
-  const handleConfirmStartTime = (date) => {
-    setStartTime(date);
-    hideStartTimePicker();
-  };
-
-  const handleConfirmEndTime = (date) => {
-    setEndTime(date);
-    hideEndTimePicker();
-  };
+  useEffect(() => {
+    const syncEvents = async () => {
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        const drafts = await AsyncStorage.getAllKeys();
+        const eventKeys = drafts.filter(key => key.startsWith(`draftEvent-${userId}-${scheduleId}`));
+        for (const key of eventKeys) {
+          const draftEvent = JSON.parse(await AsyncStorage.getItem(key));
+          const eventsCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
+          await addDoc(eventsCollectionRef, draftEvent);
+          await AsyncStorage.removeItem(key);
+        }
+      }
+    };
+    syncEvents();
+  }, [userId, scheduleId]);
 
   const handleSave = async () => {
+    console.log('handleSave triggered');
+    Alert.alert('Debug', 'handleSave triggered');
     try {
+      setLoading(true);
       const eventData = {
         title,
         location,
@@ -64,188 +103,142 @@ const EventScreen = ({ navigation, route }) => {
         repeatInterval,
       };
 
-      const eventsCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
-      await addDoc(eventsCollectionRef, eventData);
+      const netInfo = await NetInfo.fetch();
+      console.log('Network info:', netInfo);
+      Alert.alert('Network info', JSON.stringify(netInfo));
 
-      console.log('Event saved:', eventData);
-      navigation.navigate('Home');
+      if (netInfo.isConnected) {
+        const eventsCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
+        await addDoc(eventsCollectionRef, eventData);
+        console.log('Event saved to firestore:', eventData);
+        navigation.navigate('Home');
+      } else {
+        console.log('Saving event offline:', eventData);
+        await saveDraftEvent();
+        Alert.alert('No Internet', 'Event saved locally. It will be synced when you are online.');
+        console.log('Event saved locally:', eventData);
+        navigation.navigate('Home');
+      }
     } catch (error) {
       console.error('Error saving event:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartTimeConfirm = (date) => {
+    setStartTime(date);
+    setStartTimePickerVisibility(false);
+  };
+
+  const handleEndTimeConfirm = (date) => {
+    setEndTime(date);
+    setEndTimePickerVisibility(false);
+  };
+
+  const toggleAllDay = () => {
+    setAllDay(previousState => !previousState);
+    if (!allDay) {
+      const now = new Date();
+      setStartTime(new Date(now.setHours(0, 0, 0, 0)));
+      setEndTime(new Date(now.setHours(23, 59, 59, 999)));
+    } else {
+      setStartTime(null);
+      setEndTime(null);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <TextInput
-            style={styles.input}
-            placeholder="Title"
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Location"
-            value={location}
-            onChangeText={setLocation}
-          />
-          <Card containerStyle={[styles.card, styles.standardCard]}>
-            <TouchableOpacity onPress={showStartTimePicker}>
-              <View style={styles.cardContent}>
-                <Icon name="event" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Start Time: {startTime ? startTime.toLocaleString() : 'Select Start Time'}</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-          <Card containerStyle={[styles.card, styles.standardCard]}>
-            <TouchableOpacity onPress={showEndTimePicker}>
-              <View style={styles.cardContent}>
-                <Icon name="event" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>End Time: {endTime ? endTime.toLocaleString() : 'Select End Time'}</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-          <Card containerStyle={[styles.card, styles.standardCard]}>
-            <TouchableOpacity onPress={() => setAllDay(!allDay)}>
-              <View style={styles.cardContent}>
-                <Icon name="all-inclusive" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>All Day: {allDay ? 'Yes' : 'No'}</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-          <Card containerStyle={[styles.card, styles.standardCard]}>
-            <TouchableOpacity onPress={() => setRepeat(!repeat)}>
-              <View style={styles.cardContent}>
-                <Icon name="repeat" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Repeat: {repeat ? 'Yes' : 'No'}</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-          {repeat && (
-            <TextInput
-              style={styles.input}
-              placeholder="Repeat Interval (days)"
-              value={String(repeatInterval)}
-              onChangeText={(value) => setRepeatInterval(Number(value))}
-              keyboardType="numeric"
-            />
-          )}
-          <Card containerStyle={[styles.card, styles.saveCard]}>
-            <TouchableOpacity onPress={handleSave}>
-              <View style={styles.cardContent}>
-                <Icon name="save" type="material" size={27} color="#FFFFFF" />
-                <Text style={styles.saveCardTitle}>Save</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-        </View>
-        <DateTimePickerModal
-          isVisible={isStartTimePickerVisible}
-          mode="datetime"
-          onConfirm={handleConfirmStartTime}
-          onCancel={hideStartTimePicker}
-        />
-        <DateTimePickerModal
-          isVisible={isEndTimePickerVisible}
-          mode="datetime"
-          onConfirm={handleConfirmEndTime}
-          onCancel={hideEndTimePicker}
+    <ScrollView style={styles.container}>
+      <Text h4 style={styles.title}>Create Event</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Title"
+        value={title}
+        onChangeText={setTitle}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Location"
+        value={location}
+        onChangeText={setLocation}
+      />
+      <View style={styles.switchContainer}>
+        <Text style={styles.label}>All Day</Text>
+        <Switch
+          value={allDay}
+          onValueChange={toggleAllDay}
         />
       </View>
-      <View style={styles.bottomNav}>
-        <Icon
-          name="home"
-          type="material"
-          onPress={() => navigation.navigate('Home')}
-          size={30}
-          color="#03012E"
-        />
-        <Icon
-          name="calendar-today"
-          type="material"
-          onPress={() => navigation.navigate('Calendar', { userId: 'yourUserId', scheduleId: 'yourScheduleId' })}
-          size={30}
-          color="#03012E"
-        />
-        <Icon
-          name="people"
-          type="material"
-          onPress={() => navigation.navigate('Friends')}
-          size={30}
-          color="#03012E"
-        />
-        <Icon
-          name="person"
-          type="material"
-          onPress={() => navigation.navigate('Profile')}
-          size={30}
-          color="#03012E"
-        />
-      </View>
+      {!allDay && (
+        <>
+          <TouchableOpacity onPress={() => setStartTimePickerVisibility(true)}>
+            <Text style={styles.input}>{startTime ? startTime.toLocaleString() : 'Start Time'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setEndTimePickerVisibility(true)}>
+            <Text style={styles.input}>{endTime ? endTime.toLocaleString() : 'End Time'}</Text>
+          </TouchableOpacity>
+          <DateTimePickerModal
+            isVisible={isStartTimePickerVisible}
+            mode="datetime"
+            onConfirm={handleStartTimeConfirm}
+            onCancel={() => setStartTimePickerVisibility(false)}
+          />
+          <DateTimePickerModal
+            isVisible={isEndTimePickerVisible}
+            mode="datetime"
+            onConfirm={handleEndTimeConfirm}
+            onCancel={() => setEndTimePickerVisibility(false)}
+          />
+        </>
+      )}
+      <TouchableOpacity onPress={handleSave} style={styles.button}>
+        <Text style={styles.buttonText}>Save Event</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.button}>
+        <Text style={styles.buttonText}>Home</Text>
+      </TouchableOpacity>
+      <Text style={styles.offlineText}>If offline just click save once and press home</Text>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: '#03012E',
-  },
   container: {
     flex: 1,
+    padding: 16,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  title: {
+    textAlign: 'center',
+    marginVertical: 16,
   },
   input: {
-    width: '80%',
-    height: 40,
-    borderColor: '#ddd',
     borderWidth: 1,
-    marginBottom: 16,
+    borderColor: '#ccc',
     padding: 8,
-    borderRadius: 4,
-    color: '#ffffff',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    marginVertical: 8,
   },
-  card: {
-    width: '80%',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 20,
+  button: {
+    backgroundColor: '#007bff',
+    padding: 16,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginVertical: 8,
   },
-  standardCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
-  saveCard: {
-    backgroundColor: '#6aa8f2',
-  },
-  cardContent: {
+  switchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: 8,
   },
-  cardTitle: {
-    fontSize: 20,
-    color: '#03012E',
-    fontWeight: 'bold',
-    marginLeft: 10,
+  label: {
+    marginRight: 8,
   },
-  saveCardTitle: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#6aa8f2',
-    paddingVertical: 10,
+  offlineText: {
+    color: 'black',
+    textAlign: 'center',
   },
 });
 

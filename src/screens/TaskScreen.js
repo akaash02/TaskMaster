@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { Text, Icon, Card } from 'react-native-elements';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { firestore } from '../config/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+import { CommonActions } from '@react-navigation/native';
 
 const TaskScreen = ({ navigation, route }) => {
   const userId = route?.params?.userId;
   const scheduleId = route?.params?.scheduleId;
-  
+
   if (!userId || !scheduleId) {
     console.error('userId or scheduleId is undefined');
     navigation.navigate('Home');
@@ -22,6 +25,103 @@ const TaskScreen = ({ navigation, route }) => {
   const [repeat, setRepeat] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState(1);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadDraftTask = async () => {
+      try {
+        const draftTask = await AsyncStorage.getItem(`draftTask-${userId}-${scheduleId}`);
+        if (draftTask) {
+          const parsedTask = JSON.parse(draftTask);
+          setTitle(parsedTask.title);
+          setDescription(parsedTask.description);
+          setDueDate(new Date(parsedTask.dueDate));
+          setPriority(parsedTask.priority);
+          setRepeat(parsedTask.repeat);
+          setRepeatInterval(parsedTask.repeatInterval);
+        }
+      } catch (error) {
+        console.error('Error loading draft task:', error);
+      }
+    };
+    loadDraftTask();
+  }, [userId, scheduleId]);
+
+  const saveDraftTask = async () => {
+    const taskData = {
+      title,
+      description,
+      dueDate: dueDate?.toISOString(),
+      priority,
+      repeat,
+      repeatInterval,
+    };
+    try {
+      await AsyncStorage.setItem(`draftTask-${userId}-${scheduleId}`, JSON.stringify(taskData));
+      console.log('Draft task saved:', taskData); // Debug log
+      Alert.alert('Draft Saved', 'Draft task has been saved locally.');
+    } catch (error) {
+      console.error('Error saving draft task:', error);
+      Alert.alert('Error', 'Error saving draft task.');
+    }
+  };
+
+  useEffect(() => {
+    const syncTasks = async () => {
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        const drafts = await AsyncStorage.getAllKeys();
+        const taskKeys = drafts.filter(key => key.startsWith(`draftTask-${userId}-${scheduleId}`));
+        for (const key of taskKeys) {
+          const draftTask = JSON.parse(await AsyncStorage.getItem(key));
+          const tasksCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
+          await addDoc(tasksCollectionRef, draftTask);
+          await AsyncStorage.removeItem(key);
+        }
+      }
+    };
+    syncTasks();
+  }, [userId, scheduleId]);
+
+  const handleSave = async () => {
+    console.log('handleSave triggered'); // Debug log
+    try {
+      setLoading(true);
+      const taskData = {
+        title,
+        description,
+        dueDate,
+        priority,
+        repeat,
+        repeatInterval,
+      };
+  
+      const netInfo = await NetInfo.fetch();
+      console.log('Network info:', netInfo); // Debug log
+  
+      if (netInfo.isConnected) {
+        const tasksCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
+        await addDoc(tasksCollectionRef, taskData);
+        console.log('Task saved to firestore:', taskData); // Debug log
+        navigation.dispatch(CommonActions.navigate('Home'));
+      } else {
+        console.log('Saving task offline:', taskData); // Debug log
+        await saveDraftTask();
+        Alert.alert('No Internet', 'Task saved locally. It will be synced when you are online.');
+        console.log('Task saved locally:', taskData); // Debug log
+        navigation.dispatch(CommonActions.navigate('Home'));
+      }
+    } catch (error) {
+      console.error('Error saving task:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDueDateConfirm = (date) => {
+    setDueDate(date);
+    setDatePickerVisibility(false);
+  };
 
   const showDatePicker = () => {
     setDatePickerVisibility(true);
@@ -31,189 +131,106 @@ const TaskScreen = ({ navigation, route }) => {
     setDatePickerVisibility(false);
   };
 
-  const handleConfirmDate = (date) => {
-    setDueDate(date);
-    hideDatePicker();
-  };
-
-  const handleSave = async () => {
-    try {
-      const taskData = {
-        title,
-        description,
-        dueDate,
-        priority,
-        repeat,
-        repeatInterval,
-      };
-
-      const tasksCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
-      await addDoc(tasksCollectionRef, taskData);
-
-      console.log('Task saved:', taskData);
-      navigation.navigate('Home');
-    } catch (error) {
-      console.error('Error saving task:', error);
-    }
+  const handlePriorityChange = (newPriority) => {
+    setPriority(newPriority);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <TextInput
-            style={styles.input}
-            placeholder="Title"
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Description"
-            value={description}
-            onChangeText={setDescription}
-          />
-          <Card containerStyle={[styles.card, styles.standardCard]}>
-            <TouchableOpacity onPress={showDatePicker}>
-              <View style={styles.cardContent}>
-                <Icon name="event" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Due Date: {dueDate ? dueDate.toLocaleDateString() : 'Select Due Date'}</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-          <TextInput
-            style={styles.input}
-            placeholder="Priority"
-            value={String(priority)}
-            onChangeText={(value) => setPriority(Number(value))}
-            keyboardType="numeric"
-          />
-          <Card containerStyle={[styles.card, styles.standardCard]}>
-            <TouchableOpacity onPress={() => setRepeat(!repeat)}>
-              <View style={styles.cardContent}>
-                <Icon name="repeat" type="material" size={27} color="#03012E" />
-                <Text style={styles.cardTitle}>Repeat: {repeat ? 'Yes' : 'No'}</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-          {repeat && (
-            <TextInput
-              style={styles.input}
-              placeholder="Repeat Interval (days)"
-              value={String(repeatInterval)}
-              onChangeText={(value) => setRepeatInterval(Number(value))}
-              keyboardType="numeric"
-            />
-          )}
-          <Card containerStyle={[styles.card, styles.saveCard]}>
-            <TouchableOpacity onPress={handleSave}>
-              <View style={styles.cardContent}>
-                <Icon name="save" type="material" size={27} color="#FFFFFF" />
-                <Text style={styles.saveCardTitle}>Save</Text>
-              </View>
-            </TouchableOpacity>
-          </Card>
-        </View>
-        <DateTimePickerModal
-          isVisible={isDatePickerVisible}
-          mode="date"
-          onConfirm={handleConfirmDate}
-          onCancel={hideDatePicker}
-        />
+    <ScrollView style={styles.container}>
+      <Text h4 style={styles.title}>Create Task</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Title"
+        value={title}
+        onChangeText={setTitle}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Description"
+        value={description}
+        onChangeText={setDescription}
+      />
+      <TouchableOpacity onPress={showDatePicker}>
+        <Text style={styles.input}>{dueDate ? dueDate.toLocaleString() : 'Due Date'}</Text>
+      </TouchableOpacity>
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="datetime"
+        onConfirm={handleDueDateConfirm}
+        onCancel={hideDatePicker}
+      />
+      <View style={styles.priorityContainer}>
+        <Text style={styles.label}>Priority:</Text>
+        <TouchableOpacity onPress={() => handlePriorityChange(1)} style={[styles.priorityButton, priority === 1 && styles.priorityButtonSelected]}>
+          <Text style={styles.priorityButtonText}>Low</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handlePriorityChange(2)} style={[styles.priorityButton, priority === 2 && styles.priorityButtonSelected]}>
+          <Text style={styles.priorityButtonText}>Medium</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handlePriorityChange(3)} style={[styles.priorityButton, priority === 3 && styles.priorityButtonSelected]}>
+          <Text style={styles.priorityButtonText}>High</Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.bottomNav}>
-        <Icon
-          name="home"
-          type="material"
-          onPress={() => navigation.navigate('Home')}
-          size={30}
-          color="#03012E"
-        />
-        <Icon
-          name="calendar-today"
-          type="material"
-          onPress={() => navigation.navigate('Calendar', { userId: 'yourUserId', scheduleId: 'yourScheduleId' })}
-          size={30}
-          color="#03012E"
-        />
-        <Icon
-          name="people"
-          type="material"
-          onPress={() => navigation.navigate('Friends')}
-          size={30}
-          color="#03012E"
-        />
-        <Icon
-          name="person"
-          type="material"
-          onPress={() => navigation.navigate('Profile')}
-          size={30}
-          color="#03012E"
-        />
-      </View>
+      <TouchableOpacity onPress={handleSave} style={styles.button}>
+        <Text style={styles.buttonText}>Save Task</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.button}>
+        <Text style={styles.buttonText}>Home</Text>
+      </TouchableOpacity>
+      <Text style={styles.offlineText}>If offline just click save once and press home</Text>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: '#03012E',
-  },
   container: {
     flex: 1,
+    padding: 16,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  title: {
+    textAlign: 'center',
+    marginVertical: 16,
   },
   input: {
-    width: '80%',
-    height: 40,
-    borderColor: '#ddd',
     borderWidth: 1,
-    marginBottom: 16,
+    borderColor: '#ccc',
     padding: 8,
+    marginVertical: 8,
+  },
+  button: {
+    backgroundColor: '#007bff',
+    padding: 16,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  label: {
+    marginRight: 8,
+  },
+  priorityButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    marginHorizontal: 4,
     borderRadius: 4,
-    color: '#ffffff',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
-  card: {
-    width: '80%',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  priorityButtonSelected: {
+    backgroundColor: '#007bff',
   },
-  standardCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  priorityButtonText: {
+    color: '#fff',
   },
-  saveCard: {
-    backgroundColor: '#6aa8f2',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardTitle: {
-    fontSize: 20,
-    color: '#03012E',
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  saveCardTitle: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#6aa8f2',
-    paddingVertical: 10,
+  offlineText: {
+    color: 'black',
+    textAlign: 'center',
   },
 });
 

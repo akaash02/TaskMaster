@@ -3,14 +3,16 @@ import { View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-nat
 import { Text, Header, Icon, Card } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
+
 const HomeScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState('');
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const scheduleId = 'yourScheduleId';
 
   useEffect(() => {
@@ -36,26 +38,37 @@ const HomeScreen = ({ navigation }) => {
         }
       };
 
-      const fetchTasksAndEvents = async (userId) => {
-        try {
-          const tasksQuery = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks'));
-          const eventsQuery = query(collection(firestore, 'users', userId, 'schedules', scheduleId, 'events'));
+      const fetchTasksAndEvents = (userId) => {
+        const tasksRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
+        const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
 
-          const [tasksSnapshot, eventsSnapshot] = await Promise.all([getDocs(tasksQuery), getDocs(eventsQuery)]);
-
-          const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+        const unsubscribeTasks = onSnapshot(tasksRef, (querySnapshot) => {
+          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTasks(tasksList);
+          setLoading(false); // Set loading to false once data is fetched
+        }, (error) => {
+          console.error('Error fetching tasks:', error.message);
+          setLoading(false); // Set loading to false in case of error
+        });
+
+        const unsubscribeEvents = onSnapshot(eventsRef, (querySnapshot) => {
+          const eventsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setEvents(eventsList);
-        } catch (error) {
-          console.error('Error fetching tasks and events:', error.message);
-        }
+          setLoading(false); // Set loading to false once data is fetched
+        }, (error) => {
+          console.error('Error fetching events:', error.message);
+          setLoading(false); // Set loading to false in case of error
+        });
+
+        return () => {
+          unsubscribeTasks();
+          unsubscribeEvents();
+        };
       };
 
       if (userId) {
         fetchUserName(userId);
-        fetchTasksAndEvents(userId);
+        return fetchTasksAndEvents(userId);
       }
     }, [userId])
   );
@@ -115,33 +128,37 @@ const HomeScreen = ({ navigation }) => {
           <TouchableOpacity onPress={() => navigation.navigate('Calendar', { userId, scheduleId })}>
             <Text style={styles.mytasksText}>My Tasks & Events</Text>
           </TouchableOpacity>
-          <View style={styles.tasksContainer}>
-            {tasks.map(task => (
-              <TouchableOpacity key={task.id} onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
-                <View style={styles.taskItem}>
-                  <Text style={styles.taskText}>Title: {task.title || 'No title'}</Text>
-                  <Text style={styles.taskText}>Description: {task.description || 'No description'}</Text>
-                  <Text style={styles.taskText}>Priority: {task.priority || 'No priority'}</Text>
-                  <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-                  {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval || 'No interval'}</Text>}
-                  <Text style={styles.taskText}>Due Date: {task.dueDate ? task.dueDate.toDate().toDateString() : 'No due date'}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            {events.map(event => (
-              <TouchableOpacity key={event.id} onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-                <View style={styles.taskItem}>
-                  <Text style={styles.taskText}>Title: {event.title || 'No title'}</Text>
-                  <Text style={styles.taskText}>Location: {event.location || 'No location'}</Text>
-                  <Text style={styles.taskText}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
-                  <Text style={styles.taskText}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
-                  <Text style={styles.taskText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
-                  <Text style={styles.taskText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
-                  {event.repeat && <Text style={styles.taskText}>Repeat Interval: {event.repeatInterval || 'No interval'}</Text>}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {loading ? (
+            <Text style={styles.loadingText}>Loading...</Text>
+          ) : (
+            <View style={styles.tasksContainer}>
+              {tasks.map(task => (
+                <TouchableOpacity key={task.id} onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+                  <View style={styles.taskItem}>
+                    <Text style={styles.taskText}>Title: {task.title || 'No title'}</Text>
+                    <Text style={styles.taskText}>Description: {task.description || 'No description'}</Text>
+                    <Text style={styles.taskText}>Priority: {task.priority || 'No priority'}</Text>
+                    <Text style={styles.taskText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+                    {task.repeat && <Text style={styles.taskText}>Repeat Interval: {task.repeatInterval || 'No interval'}</Text>}
+                    <Text style={styles.taskText}>Due Date: {task.dueDate ? task.dueDate.toDate().toDateString() : 'No due date'}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              {events.map(event => (
+                <TouchableOpacity key={event.id} onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
+                  <View style={styles.taskItem}>
+                    <Text style={styles.taskText}>Title: {event.title || 'No title'}</Text>
+                    <Text style={styles.taskText}>Location: {event.location || 'No location'}</Text>
+                    <Text style={styles.taskText}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
+                    <Text style={styles.taskText}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
+                    <Text style={styles.taskText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
+                    <Text style={styles.taskText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
+                    {event.repeat && <Text style={styles.taskText}>Repeat Interval: {event.repeatInterval || 'No interval'}</Text>}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -187,8 +204,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dateCard: {
-    width: 400,
-    height: 100,
+    width: '90%',
+    height: '14%',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   iconRow: {
@@ -233,6 +250,12 @@ const styles = StyleSheet.create({
   },
   taskText: {
     color: 'black',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
   },
 });
 
