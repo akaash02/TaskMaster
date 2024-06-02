@@ -1,5 +1,3 @@
-// /src/screens/EventScreen.js
-
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
 import { Text } from 'react-native-elements';
@@ -9,12 +7,22 @@ import { collection, addDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { CommonActions } from '@react-navigation/native';
-import { ThemeContext } from '../themses/ThemeContext';
+import { ThemeContext } from '../navigation/AppNavigator';
 
 const EventScreen = ({ navigation, route }) => {
   const userId = route?.params?.userId;
   const scheduleId = route?.params?.scheduleId;
   const { theme } = useContext(ThemeContext);
+
+  console.log('ThemeContext in EventScreen:', theme);
+
+  if (!theme) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Theme context is not available.</Text>
+      </View>
+    );
+  }
 
   if (!userId || !scheduleId) {
     console.error('userId or scheduleId is undefined');
@@ -94,7 +102,6 @@ const EventScreen = ({ navigation, route }) => {
 
   const handleSave = async () => {
     console.log('handleSave triggered');
-    Alert.alert('Debug', 'handleSave triggered');
     try {
       setLoading(true);
       const eventData = {
@@ -109,7 +116,7 @@ const EventScreen = ({ navigation, route }) => {
 
       const netInfo = await NetInfo.fetch();
       console.log('Network info:', netInfo);
-      Alert.alert('Network info', JSON.stringify(netInfo));
+  
 
       if (netInfo.isConnected) {
         const eventsCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
@@ -156,14 +163,14 @@ const EventScreen = ({ navigation, route }) => {
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Text h4 style={[styles.title, { color: theme.colors.text }]}>Create Event</Text>
       <TextInput
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
+        style={[styles.input, { borderColor: theme.colors.text, color: theme.colors.text }]}
         placeholder="Title"
         placeholderTextColor={theme.colors.placeholder}
         value={title}
         onChangeText={setTitle}
       />
       <TextInput
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
+        style={[styles.input, { borderColor: theme.colors.text, color: theme.colors.text }]}
         placeholder="Location"
         placeholderTextColor={theme.colors.placeholder}
         value={location}
@@ -202,11 +209,11 @@ const EventScreen = ({ navigation, route }) => {
           />
         </>
       )}
-      <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.primary }]}>
-        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save Event</Text>
+      <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Event</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.primary }]}>
-        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Home</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Home</Text>
       </TouchableOpacity>
       <Text style={[styles.offlineText, { color: theme.colors.text }]}>If offline just click save once and press home</Text>
     </ScrollView>
@@ -221,16 +228,17 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginVertical: 16,
-    
   },
   input: {
     borderWidth: 1,
     padding: 8,
     marginVertical: 8,
+    borderRadius: 4,
   },
   button: {
     padding: 16,
     alignItems: 'center',
+    borderRadius: 4,
     marginVertical: 8,
   },
   buttonText: {
@@ -238,14 +246,20 @@ const styles = StyleSheet.create({
   },
   switchContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 8,
   },
   label: {
-    marginRight: 8,
+    fontSize: 16,
   },
   offlineText: {
     textAlign: 'center',
+    marginTop: 20,
+  },
+  errorText: {
+    textAlign: 'center',
+    color: 'red',
   },
 });
 

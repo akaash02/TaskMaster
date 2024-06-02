@@ -5,7 +5,8 @@ import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { Card } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { ThemeContext } from '../themses/ThemeContext';
+import { ThemeContext } from '../navigation/AppNavigator'; // Ensure correct path
+import { darkTheme, lightTheme } from '../themes';
 
 const CustomButton = ({ title, onPress, color, textColor }) => (
   <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress}>

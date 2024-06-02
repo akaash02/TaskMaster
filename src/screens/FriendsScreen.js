@@ -1,10 +1,21 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Header, Icon, Text } from 'react-native-elements';
-import { ThemeContext } from '../themses/ThemeContext';
+import { ThemeContext } from '../navigation/AppNavigator'; // Ensure this path is correct
 
 const FriendsScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
+
+  // Debugging log
+  console.log('ThemeContext in FriendsScreen:', theme);
+
+  if (!theme) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Theme context is not available.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -77,6 +88,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
+  },
+  errorText: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 

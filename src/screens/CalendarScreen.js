@@ -8,7 +8,8 @@ import { firestore } from '../config/firebaseConfig';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
-import { ThemeContext } from '../themses/ThemeContext';
+import { ThemeContext } from '../navigation/AppNavigator';
+import { darkTheme, lightTheme } from '../themes';
 
 const CalendarScreen = ({ navigation, route }) => {
   const { userId, scheduleId } = route.params;
