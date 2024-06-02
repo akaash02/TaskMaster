@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -7,10 +7,12 @@ import { collection, addDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { CommonActions } from '@react-navigation/native';
+import { ThemeContext } from '../themses/ThemeContext';
 
 const TaskScreen = ({ navigation, route }) => {
   const userId = route?.params?.userId;
   const scheduleId = route?.params?.scheduleId;
+  const { theme } = useContext(ThemeContext);
 
   if (!userId || !scheduleId) {
     console.error('userId or scheduleId is undefined');
@@ -58,7 +60,7 @@ const TaskScreen = ({ navigation, route }) => {
     };
     try {
       await AsyncStorage.setItem(`draftTask-${userId}-${scheduleId}`, JSON.stringify(taskData));
-      console.log('Draft task saved:', taskData); // Debug log
+      console.log('Draft task saved:', taskData);
       Alert.alert('Draft Saved', 'Draft task has been saved locally.');
     } catch (error) {
       console.error('Error saving draft task:', error);
@@ -84,7 +86,7 @@ const TaskScreen = ({ navigation, route }) => {
   }, [userId, scheduleId]);
 
   const handleSave = async () => {
-    console.log('handleSave triggered'); // Debug log
+    console.log('handleSave triggered');
     try {
       setLoading(true);
       const taskData = {
@@ -97,18 +99,18 @@ const TaskScreen = ({ navigation, route }) => {
       };
   
       const netInfo = await NetInfo.fetch();
-      console.log('Network info:', netInfo); // Debug log
+      console.log('Network info:', netInfo);
   
       if (netInfo.isConnected) {
         const tasksCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
         await addDoc(tasksCollectionRef, taskData);
-        console.log('Task saved to firestore:', taskData); // Debug log
+        console.log('Task saved to firestore:', taskData);
         navigation.dispatch(CommonActions.navigate('Home'));
       } else {
-        console.log('Saving task offline:', taskData); // Debug log
+        console.log('Saving task offline:', taskData);
         await saveDraftTask();
         Alert.alert('No Internet', 'Task saved locally. It will be synced when you are online.');
-        console.log('Task saved locally:', taskData); // Debug log
+        console.log('Task saved locally:', taskData);
         navigation.dispatch(CommonActions.navigate('Home'));
       }
     } catch (error) {
@@ -136,22 +138,26 @@ const TaskScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text h4 style={styles.title}>Create Task</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text h4 style={[styles.title, { color: theme.colors.text }]}>Create Task</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
         placeholder="Title"
+        placeholderTextColor={theme.colors.placeholder}
         value={title}
         onChangeText={setTitle}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
         placeholder="Description"
+        placeholderTextColor={theme.colors.placeholder}
         value={description}
         onChangeText={setDescription}
       />
       <TouchableOpacity onPress={showDatePicker}>
-        <Text style={styles.input}>{dueDate ? dueDate.toLocaleString() : 'Due Date'}</Text>
+        <Text style={[styles.input, { color: theme.colors.text }]}>
+          {dueDate ? dueDate.toLocaleString() : 'Due Date'}
+        </Text>
       </TouchableOpacity>
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -160,24 +166,38 @@ const TaskScreen = ({ navigation, route }) => {
         onCancel={hideDatePicker}
       />
       <View style={styles.priorityContainer}>
-        <Text style={styles.label}>Priority:</Text>
-        <TouchableOpacity onPress={() => handlePriorityChange(1)} style={[styles.priorityButton, priority === 1 && styles.priorityButtonSelected]}>
-          <Text style={styles.priorityButtonText}>Low</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>Priority:</Text>
+        <TouchableOpacity
+          onPress={() => handlePriorityChange(1)}
+          style={[styles.priorityButton, priority === 1 && { backgroundColor: theme.colors.primary }]}
+        >
+          <Text style={[styles.priorityButtonText, priority === 1 && { color: theme.colors.buttonText }]}>Low          </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handlePriorityChange(2)} style={[styles.priorityButton, priority === 2 && styles.priorityButtonSelected]}>
-          <Text style={styles.priorityButtonText}>Medium</Text>
+        <TouchableOpacity
+          onPress={() => handlePriorityChange(2)}
+          style={[styles.priorityButton, priority === 2 && { backgroundColor: theme.colors.primary }]}
+        >
+          <Text style={[styles.priorityButtonText, priority === 2 && { color: theme.colors.buttonText }]}>Medium</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handlePriorityChange(3)} style={[styles.priorityButton, priority === 3 && styles.priorityButtonSelected]}>
-          <Text style={styles.priorityButtonText}>High</Text>
+        <TouchableOpacity
+          onPress={() => handlePriorityChange(3)}
+          style={[styles.priorityButton, priority === 3 && { backgroundColor: theme.colors.primary }]}
+        >
+          <Text style={[styles.priorityButtonText, priority === 3 && { color: theme.colors.buttonText }]}>High</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={handleSave} style={styles.button}>
-        <Text style={styles.buttonText}>Save Task</Text>
+      <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save Task</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.button}>
-        <Text style={styles.buttonText}>Home</Text>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Home')}
+        style={[styles.button, { backgroundColor: theme.colors.primary }]}
+      >
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Home</Text>
       </TouchableOpacity>
-      <Text style={styles.offlineText}>If offline just click save once and press home</Text>
+      <Text style={[styles.offlineText, { color: theme.colors.text }]}>
+        If offline just click save once and press home
+      </Text>
     </ScrollView>
   );
 };
@@ -193,18 +213,17 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     padding: 8,
     marginVertical: 8,
+    borderRadius: 4,
   },
   button: {
-    backgroundColor: '#007bff',
     padding: 16,
     alignItems: 'center',
     marginVertical: 8,
+    borderRadius: 4,
   },
   buttonText: {
-    color: '#fff',
     fontWeight: 'bold',
   },
   priorityContainer: {
@@ -217,21 +236,15 @@ const styles = StyleSheet.create({
   },
   priorityButton: {
     borderWidth: 1,
-    borderColor: '#ccc',
     padding: 8,
     marginHorizontal: 4,
     borderRadius: 4,
   },
-  priorityButtonSelected: {
-    backgroundColor: '#007bff',
-  },
-  priorityButtonText: {
-    color: '#fff',
-  },
+  priorityButtonText: {},
   offlineText: {
-    color: 'black',
     textAlign: 'center',
   },
 });
 
 export default TaskScreen;
+

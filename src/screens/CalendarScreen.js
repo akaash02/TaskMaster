@@ -1,4 +1,6 @@
-import React, { useState, useCallback } from 'react';
+// /src/screens/CalendarScreen.js
+
+import React, { useState, useCallback, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Header, Text, Icon } from 'react-native-elements';
 import { Calendar } from 'react-native-calendars';
@@ -6,9 +8,11 @@ import { firestore } from '../config/firebaseConfig';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
+import { ThemeContext } from '../themses/ThemeContext';
 
 const CalendarScreen = ({ navigation, route }) => {
   const { userId, scheduleId } = route.params;
+  const { theme } = useContext(ThemeContext);
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,12 +68,12 @@ const CalendarScreen = ({ navigation, route }) => {
           <TouchableOpacity 
             key={task.id} 
             onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
-            <View style={styles.item}>
-              <Text style={styles.itemText}>Title: {task.title}</Text>
-              <Text style={styles.itemText}>Description: {task.description}</Text>
-              <Text style={styles.itemText}>Priority: {task.priority}</Text>
-              <Text style={styles.itemText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-              {task.repeat && <Text style={styles.itemText}>Repeat Interval: {task.repeatInterval}</Text>}
+            <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {task.title}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Description: {task.description}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+              {task.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {task.repeatInterval}</Text>}
             </View>
           </TouchableOpacity>
         ))}
@@ -77,14 +81,14 @@ const CalendarScreen = ({ navigation, route }) => {
           <TouchableOpacity 
             key={event.id} 
             onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-            <View style={styles.item}>
-              <Text style={styles.itemText}>Title: {event.title}</Text>
-              <Text style={styles.itemText}>Location: {event.location}</Text>
-              <Text style={styles.itemText}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
-              <Text style={styles.itemText}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
-              <Text style={styles.itemText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
-              <Text style={styles.itemText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
-              {event.repeat && <Text style={styles.itemText}>Repeat Interval: {event.repeatInterval}</Text>}
+            <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {event.title}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Location: {event.location}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
+              <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
+              {event.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {event.repeatInterval}</Text>}
             </View>
           </TouchableOpacity>
         ))}
@@ -101,9 +105,9 @@ const CalendarScreen = ({ navigation, route }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
-        centerComponent={{ text: 'My Calendar', style: styles.headerText }}
+        centerComponent={{ text: 'My Calendar', style: [styles.headerText, { color: theme.colors.text }] }}
         containerStyle={styles.headerContainer}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
@@ -115,19 +119,19 @@ const CalendarScreen = ({ navigation, route }) => {
             theme={{
               backgroundColor: 'transparent',
               calendarBackground: 'transparent',
-              textSectionTitleColor: '#fff',
+              textSectionTitleColor: theme.colors.text,
               textSectionTitleDisabledColor: '#d9e1e8',
-              selectedDayBackgroundColor: '#6aa8f2',
+              selectedDayBackgroundColor: theme.colors.primary,
               selectedDayTextColor: '#ffffff',
-              todayTextColor: '#6aa8f2',
-              dayTextColor: '#ffffff',
+              todayTextColor: theme.colors.primary,
+              dayTextColor: theme.colors.text,
               textDisabledColor: '#2d4150',
-              dotColor: '#6aa8f2',
+              dotColor: theme.colors.primary,
               selectedDotColor: '#ffffff',
-              arrowColor: '#ffffff',
+              arrowColor: theme.colors.text,
               disabledArrowColor: '#d9e1e8',
-              monthTextColor: '#ffffff',
-              indicatorColor: '#ffffff',
+              monthTextColor: theme.colors.text,
+              indicatorColor: theme.colors.text,
               textDayFontWeight: '300',
               textMonthFontWeight: 'bold',
               textDayHeaderFontWeight: '300',
@@ -143,7 +147,7 @@ const CalendarScreen = ({ navigation, route }) => {
         </View>
         <View style={styles.tasksContainer}>
           <View style={styles.tasksHeader}>
-            <Text style={styles.tasksHeaderText}>My Tasks & Events</Text>
+            <Text style={[styles.tasksHeaderText, { color: theme.colors.text }]}>My Tasks & Events</Text>
             <CircularDropdown
               icon="add"
               options={[
@@ -154,20 +158,20 @@ const CalendarScreen = ({ navigation, route }) => {
             />
           </View>
           {loading ? (
-            <Text style={styles.loadingText}>Loading...</Text>
+            <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
           ) : (
             <>
               {tasks.map(task => (
                 <TouchableOpacity 
                   key={task.id} 
                   onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
-                  <View style={styles.item}>
-                    <Text style={styles.itemText}>Title: {task.title}</Text>
-                    <Text style={styles.itemText}>Description: {task.description}</Text>
-                    <Text style={styles.itemText}>Priority: {task.priority}</Text>
-                    <Text style={styles.itemText}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-                    {task.repeat && <Text style={styles.itemText}>Repeat Interval: {task.repeatInterval}</Text>}
-                    <Text style={styles.itemText}>{task.dueDate.toDate().toDateString()}</Text>
+                  <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {task.title}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Description: {task.description}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
+                    {task.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {task.repeatInterval}</Text>}
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>{task.dueDate.toDate().toDateString()}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -175,14 +179,14 @@ const CalendarScreen = ({ navigation, route }) => {
                 <TouchableOpacity 
                   key={event.id} 
                   onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-                  <View style={styles.item}>
-                    <Text style={styles.itemText}>Title: {event.title}</Text>
-                    <Text style={styles.itemText}>Location: {event.location}</Text>
-                    <Text style={styles.itemText}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
-                    <Text style={styles.itemText}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
-                    <Text style={styles.itemText}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
-                    <Text style={styles.itemText}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
-                    {event.repeat && <Text style={styles.itemText}>Repeat Interval: {event.repeatInterval}</Text>}
+                  <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {event.title}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Location: {event.location}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
+                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
+                    {event.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {event.repeatInterval}</Text>}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -190,34 +194,34 @@ const CalendarScreen = ({ navigation, route }) => {
           )}
         </View>
       </ScrollView>
-      <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { backgroundColor: theme.colors.card }]}>
         <Icon
           name="home"
           type="material"
           onPress={() => navigation.navigate('Home')}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
         <Icon
           name="calendar-today"
           type="material"
           onPress={() => navigation.navigate('Calendar', { userId, scheduleId })}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
         <Icon
           name="people"
           type="material"
           onPress={() => navigation.navigate('Friends')}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
         <Icon
           name="person"
           type="material"
           onPress={() => navigation.navigate('Profile')}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
       </View>
     </View>
@@ -227,7 +231,6 @@ const CalendarScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#03012E',
   },
   headerContainer: {
     paddingTop: 40,
@@ -235,7 +238,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   headerText: {
-    color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -257,28 +259,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tasksHeaderText: {
-    color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
   },
   item: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 10,
     padding: 10,
     marginBottom: 10,
   },
   itemText: {
-    color: 'black',
     fontSize: 16,
   },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#6aa8f2',
     paddingVertical: 10,
   },
   loadingText: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',

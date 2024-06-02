@@ -1,6 +1,11 @@
+// App.js or main entry point
 import React from 'react';
-import AppNavigator from './src/navigation/AppNavigator'; // Correct path
+import AppNavigator from './src/navigation/AppNavigator';
 
-export default function App() {
-  return <AppNavigator />;
-}
+const App = () => {
+  return (
+      <AppNavigator />
+  );
+};
+
+export default App;

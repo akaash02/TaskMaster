@@ -1,11 +1,16 @@
-import React from 'react';
-import { View, StyleSheet, Button, Alert, TouchableOpacity, Text } from 'react-native';
+import React, { useContext } from 'react';
+import { View, StyleSheet, Alert, TouchableOpacity, Text, Switch } from 'react-native';
 import { Header, Icon } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
+import { ThemeContext } from '../navigation/AppNavigator';
+import { darkTheme, lightTheme } from '../themes';
 
 const ProfileScreen = ({ navigation }) => {
+  const { theme, setTheme, saveThemePreference } = useContext(ThemeContext);
+  const isDarkMode = theme.dark;
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -47,50 +52,80 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
+  const toggleTheme = () => {
+    const newTheme = isDarkMode ? lightTheme : darkTheme;
+    setTheme(newTheme);
+    saveThemePreference(newTheme.dark ? 'dark' : 'light');
+    Alert.alert(
+      'Theme Changed',
+      'You have changed the theme. Please log out and log in again to apply the changes.',
+      [
+        {
+          text: 'Log Out Now',
+          onPress: handleLogout,
+        },
+        {
+          text: 'Later',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
-        centerComponent={{ text: 'My Profile', style: styles.headerText }}
+        centerComponent={{ text: 'My Profile', style: [styles.headerText, { color: theme.colors.text }] }}
         containerStyle={styles.headerContainer}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
       <View style={styles.content}>
-        <TouchableOpacity style={styles.button} onPress={handleLogout}>
-          <Text style={styles.buttonText}>Logout</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={handleLogout}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Logout</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleDeleteProfile}>
-          <Text style={styles.buttonText}>Delete Profile</Text>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Delete Profile</Text>
         </TouchableOpacity>
+        <View style={styles.switchContainer}>
+          <Text style={{ color: theme.colors.text }}>Dark Mode</Text>
+          <Switch
+            value={isDarkMode}
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={isDarkMode ? '#f5dd4b' : '#f4f3f4'}
+          />
+        </View>
       </View>
-      <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { backgroundColor: theme.colors.card }]}>
         <Icon
           name='home'
           type='material'
           onPress={() => navigation.navigate('Home')}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
         <Icon
           name='calendar-today'
           type='material'
           onPress={() => navigation.navigate('Calendar', { userId: 'yourUserId', scheduleId: 'yourScheduleId' })}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
         <Icon
           name='people'
           type='material'
           onPress={() => navigation.navigate('Friends')}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
         <Icon
           name='person'
           type='material'
           onPress={() => navigation.navigate('Profile')}
           size={30}
-          color="#03012E"
+          color={theme.colors.text}
         />
       </View>
     </View>
@@ -100,16 +135,14 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#03012E',
   },
   headerContainer: {
-    paddingTop: 40,
+    paddingTop: 20,
     backgroundColor: 'transparent',
     borderBottomWidth: 0,
   },
   headerText: {
-    color: '#fff',
-    fontSize: 30,
+    fontSize: 50,
     fontWeight: 'bold',
   },
   content: {
@@ -121,7 +154,6 @@ const styles = StyleSheet.create({
   button: {
     width: '80%',
     padding: 15,
-    backgroundColor: '#e74c3c',
     borderRadius: 10,
     marginBottom: 20,
     alignItems: 'center',
@@ -130,9 +162,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff0000',
   },
   buttonText: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
   },
   bottomNav: {
     flexDirection: 'row',

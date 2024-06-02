@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+// /src/screens/EventScreen.js
+
+import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
 import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -7,10 +9,12 @@ import { collection, addDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { CommonActions } from '@react-navigation/native';
+import { ThemeContext } from '../themses/ThemeContext';
 
 const EventScreen = ({ navigation, route }) => {
   const userId = route?.params?.userId;
   const scheduleId = route?.params?.scheduleId;
+  const { theme } = useContext(ThemeContext);
 
   if (!userId || !scheduleId) {
     console.error('userId or scheduleId is undefined');
@@ -149,22 +153,24 @@ const EventScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text h4 style={styles.title}>Create Event</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text h4 style={[styles.title, { color: theme.colors.text }]}>Create Event</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
         placeholder="Title"
+        placeholderTextColor={theme.colors.placeholder}
         value={title}
         onChangeText={setTitle}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
         placeholder="Location"
+        placeholderTextColor={theme.colors.placeholder}
         value={location}
         onChangeText={setLocation}
       />
       <View style={styles.switchContainer}>
-        <Text style={styles.label}>All Day</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>All Day</Text>
         <Switch
           value={allDay}
           onValueChange={toggleAllDay}
@@ -173,10 +179,14 @@ const EventScreen = ({ navigation, route }) => {
       {!allDay && (
         <>
           <TouchableOpacity onPress={() => setStartTimePickerVisibility(true)}>
-            <Text style={styles.input}>{startTime ? startTime.toLocaleString() : 'Start Time'}</Text>
+            <Text style={[styles.input, { color: theme.colors.text }]}>
+              {startTime ? startTime.toLocaleString() : 'Start Time'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setEndTimePickerVisibility(true)}>
-            <Text style={styles.input}>{endTime ? endTime.toLocaleString() : 'End Time'}</Text>
+            <Text style={[styles.input, { color: theme.colors.text }]}>
+              {endTime ? endTime.toLocaleString() : 'End Time'}
+            </Text>
           </TouchableOpacity>
           <DateTimePickerModal
             isVisible={isStartTimePickerVisible}
@@ -192,13 +202,13 @@ const EventScreen = ({ navigation, route }) => {
           />
         </>
       )}
-      <TouchableOpacity onPress={handleSave} style={styles.button}>
-        <Text style={styles.buttonText}>Save Event</Text>
+      <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save Event</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.button}>
-        <Text style={styles.buttonText}>Home</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.primary }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Home</Text>
       </TouchableOpacity>
-      <Text style={styles.offlineText}>If offline just click save once and press home</Text>
+      <Text style={[styles.offlineText, { color: theme.colors.text }]}>If offline just click save once and press home</Text>
     </ScrollView>
   );
 };
@@ -211,21 +221,19 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginVertical: 16,
+    
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     padding: 8,
     marginVertical: 8,
   },
   button: {
-    backgroundColor: '#007bff',
     padding: 16,
     alignItems: 'center',
     marginVertical: 8,
   },
   buttonText: {
-    color: '#fff',
     fontWeight: 'bold',
   },
   switchContainer: {
@@ -237,7 +245,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   offlineText: {
-    color: 'black',
     textAlign: 'center',
   },
 });
