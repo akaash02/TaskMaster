@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
 import { ThemeContext } from '../navigation/AppNavigator';
 import { darkTheme, lightTheme } from '../themes';
+import NavBar from '../components/NavBar';
 
 const CalendarScreen = ({ navigation, route }) => {
   const { userId, scheduleId } = route.params;
@@ -195,36 +196,7 @@ const CalendarScreen = ({ navigation, route }) => {
           )}
         </View>
       </ScrollView>
-      <View style={[styles.bottomNav, { backgroundColor: theme.colors.card }]}>
-        <Icon
-          name="home"
-          type="material"
-          onPress={() => navigation.navigate('Home')}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name="calendar-today"
-          type="material"
-          onPress={() => navigation.navigate('Calendar', { userId, scheduleId })}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name="people"
-          type="material"
-          onPress={() => navigation.navigate('Friends')}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name="person"
-          type="material"
-          onPress={() => navigation.navigate('Profile')}
-          size={30}
-          color={theme.colors.text}
-        />
-      </View>
+      <NavBar navigation={navigation} userId={userId} scheduleId={scheduleId} />
     </View>
   );
 };
@@ -270,11 +242,6 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 16,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
   },
   loadingText: {
     fontSize: 18,

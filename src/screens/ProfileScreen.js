@@ -1,11 +1,14 @@
+// /src/screens/ProfileScreen.js
+
 import React, { useContext } from 'react';
 import { View, StyleSheet, Alert, TouchableOpacity, Text, Switch } from 'react-native';
-import { Header, Icon } from 'react-native-elements';
+import { Header } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
 import { darkTheme, lightTheme } from '../themes';
+import NavBar from '../components/NavBar'; // Import the NavBar component
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, setTheme, saveThemePreference } = useContext(ThemeContext);
@@ -98,36 +101,7 @@ const ProfileScreen = ({ navigation }) => {
           />
         </View>
       </View>
-      <View style={[styles.bottomNav, { backgroundColor: theme.colors.card }]}>
-        <Icon
-          name='home'
-          type='material'
-          onPress={() => navigation.navigate('Home')}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name='calendar-today'
-          type='material'
-          onPress={() => navigation.navigate('Calendar', { userId: 'yourUserId', scheduleId: 'yourScheduleId' })}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name='people'
-          type='material'
-          onPress={() => navigation.navigate('Friends')}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name='person'
-          type='material'
-          onPress={() => navigation.navigate('Profile')}
-          size={30}
-          color={theme.colors.text}
-        />
-      </View>
+      <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />
     </View>
   );
 };

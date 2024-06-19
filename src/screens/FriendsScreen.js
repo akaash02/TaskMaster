@@ -1,7 +1,10 @@
+// /src/screens/FriendsScreen.js
+
 import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Header, Icon, Text } from 'react-native-elements';
+import { Header, Text } from 'react-native-elements';
 import { ThemeContext } from '../navigation/AppNavigator'; // Ensure this path is correct
+import NavBar from '../components/NavBar'; // Import the NavBar component
 
 const FriendsScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -28,36 +31,7 @@ const FriendsScreen = ({ navigation }) => {
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.colors.text }]}>You currently have no friends</Text>
       </View>
-      <View style={[styles.bottomNav, { backgroundColor: theme.colors.card }]}>
-        <Icon
-          name='home'
-          type='material'
-          onPress={() => navigation.navigate('Home')}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name='calendar-today'
-          type='material'
-          onPress={() => navigation.navigate('Calendar', { userId: 'yourUserId', scheduleId: 'yourScheduleId' })}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name='people'
-          type='material'
-          onPress={() => navigation.navigate('Friends')}
-          size={30}
-          color={theme.colors.text}
-        />
-        <Icon
-          name='person'
-          type='material'
-          onPress={() => navigation.navigate('Profile')}
-          size={30}
-          color={theme.colors.text}
-        />
-      </View>
+      <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />
     </View>
   );
 };
@@ -83,11 +57,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
   },
   errorText: {
     fontSize: 18,
