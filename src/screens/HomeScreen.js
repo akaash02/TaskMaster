@@ -1,6 +1,5 @@
-// src/screens/HomeScreen.js
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Card, Icon } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -17,7 +16,17 @@ const HomeScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  const formattedDay = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
   const scheduleId = 'yourScheduleId';
+
+  const startOfWeek = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+  const endOfWeek = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 6));
+  const dates = [];
+  for (let d = new Date(startOfWeek); d <= endOfWeek; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d));
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -49,19 +58,19 @@ const HomeScreen = ({ navigation }) => {
         const unsubscribeTasks = onSnapshot(tasksRef, (querySnapshot) => {
           const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTasks(tasksList);
-          setLoading(false); // Set loading to false once data is fetched
+          setLoading(false);
         }, (error) => {
           console.error('Error fetching tasks:', error.message);
-          setLoading(false); // Set loading to false in case of error
+          setLoading(false);
         });
 
         const unsubscribeEvents = onSnapshot(eventsRef, (querySnapshot) => {
           const eventsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setEvents(eventsList);
-          setLoading(false); // Set loading to false once data is fetched
+          setLoading(false);
         }, (error) => {
           console.error('Error fetching events:', error.message);
-          setLoading(false); // Set loading to false in case of error
+          setLoading(false);
         });
 
         return () => {
@@ -77,10 +86,6 @@ const HomeScreen = ({ navigation }) => {
     }, [userId])
   );
 
-  const currentDate = new Date();
-  const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-  const formattedDay = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
-
   const handleDropdownSelect = (option) => {
     if (option.value === 'task') {
       navigation.navigate('Task', { userId, scheduleId });
@@ -94,12 +99,23 @@ const HomeScreen = ({ navigation }) => {
       <Text style={[styles.headerText, { color: theme.colors.text }]}>Hello {userName}!</Text>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-            <View style={[styles.dateTimeContainer, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.date, { color: theme.colors.text }]}>{formattedDate}</Text>
-              <Text style={[styles.day, { color: theme.colors.text }]}>{formattedDay}</Text>
+          <View style={[styles.card, styles.dateCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.weekDaysContainer}>
+              {dates.map((date, index) => (
+                <TouchableOpacity key={index} style={[
+                  styles.weekDayBox,
+                  date.toDateString() === new Date().toDateString() && [styles.currentDayBox, { backgroundColor: theme.colors.text }]
+                ]}>
+                  <Text style={date.toDateString() === new Date().toDateString() ? [styles.currentWeekDayText, { color: theme.colors.background }] : [styles.weekDayText, { color: theme.colors.text }]}>
+                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </Text>
+                  <Text style={date.toDateString() === new Date().toDateString() ? [styles.currentWeekDayText, { color: theme.colors.background }] : [styles.weekDayText, { color: theme.colors.text }]}>
+                    {date.toLocaleDateString('en-GB', { day: '2-digit' })}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </Card>
+          </View>
           <View style={styles.iconRow}>
             <CircularDropdown
               icon="add"
@@ -188,22 +204,14 @@ const styles = StyleSheet.create({
     width: '90%',
     alignSelf: 'center',
   },
+  dateCard: {
+    height: '15%',
+  },
   iconRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
     marginBottom: 20,
-  },
-  dateTimeContainer: {
-    alignItems: 'center',
-    width: '90%',
-  },
-  date: {
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
-  day: {
-    fontSize: 18,
   },
   mytasksText: {
     fontSize: 24,
@@ -228,6 +236,41 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 20,
+  },
+  dateContainer: {
+    alignItems: 'center',
+  },
+  date: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  day: {
+    fontSize: 20,
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: '5%', 
+  },
+  weekDayBox: {
+    width: '13%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: '2%', 
+  },
+  currentDayBox: {
+    borderWidth: 1,
+    borderRadius: 10,
+  },
+  weekDayText: {
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  currentWeekDayText: {
+    fontSize: 20,
+    textAlign: 'center',
   },
 });
 
