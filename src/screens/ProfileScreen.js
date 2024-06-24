@@ -7,7 +7,7 @@ import { auth, firestore } from '../config/firebaseConfig';
 import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes';
+import { darkTheme, lightTheme } from '../themes/iThemeIdex';
 import NavBar from '../components/NavBar'; // Import the NavBar component
 
 const ProfileScreen = ({ navigation }) => {
@@ -85,6 +85,9 @@ const ProfileScreen = ({ navigation }) => {
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
       <View style={styles.content}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('TimeSlot')}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Free time slots</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={handleLogout}>
           <Text style={[styles.buttonText, { color: theme.colors.text }]}>Logout</Text>
         </TouchableOpacity>

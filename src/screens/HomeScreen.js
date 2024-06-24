@@ -7,7 +7,7 @@ import { collection, doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes';
+import { darkTheme, lightTheme } from '../themes/iThemeIdex';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -144,14 +144,13 @@ const HomeScreen = ({ navigation }) => {
           ) : (
             <View style={styles.tasksContainer}>
               {tasks.map(task => (
-                <TouchableOpacity key={task.id} onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+                <TouchableOpacity key={task.id} onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
                   <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {task.title || 'No title'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Description: {task.description || 'No description'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Priority: {task.priority || 'No priority'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-                    {task.repeat && <Text style={[styles.taskText, { color: theme.colors.text }]}>Repeat Interval: {task.repeatInterval || 'No interval'}</Text>}
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Due Date: {task.dueDate ? task.dueDate.toDate().toDateString() : 'No due date'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Difficulty: {task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -162,9 +161,6 @@ const HomeScreen = ({ navigation }) => {
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Location: {event.location || 'No location'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
-                    {event.repeat && <Text style={[styles.taskText, { color: theme.colors.text }]}>Repeat Interval: {event.repeatInterval || 'No interval'}</Text>}
                   </View>
                 </TouchableOpacity>
               ))}

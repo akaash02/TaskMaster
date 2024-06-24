@@ -6,7 +6,7 @@ import { Card } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { ThemeContext } from '../navigation/AppNavigator'; // Ensure correct path
-import { darkTheme, lightTheme } from '../themes';
+import { darkTheme, lightTheme } from '../themes/iThemeIdex';
 
 const CustomButton = ({ title, onPress, color, textColor }) => (
   <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress}>
@@ -105,18 +105,9 @@ const ViewEventScreen = ({ navigation, route }) => {
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatDateTime(event.endTime)}</Text>
       </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>All Day</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.text, { color: theme.colors.text }]}>{event.allDay ? 'Yes' : 'No'}</Text>
-      </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>Repeat</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.text, { color: theme.colors.text }]}>{event.repeat ? `Every ${event.repeatInterval} days` : 'No'}</Text>
-      </Card>
       <View style={styles.buttons}>
-        <CustomButton title="Edit Event" onPress={() => navigation.navigate('Event', { userId, scheduleId, eventId })} color={theme.colors.card} textColor={theme.colors.text} />
-        <CustomButton title="Back" onPress={() => navigation.navigate('Calendar', { userId, scheduleId })} color={theme.colors.card} textColor={theme.colors.text} />
         <CustomButton title="Delete Event" onPress={deleteEvent} color="red" textColor="white" />
+        <CustomButton title="Home" onPress={() => navigation.navigate('Home')} color={theme.colors.text} textColor={theme.colors.background} />
       </View>
     </View>
   );
@@ -158,14 +149,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    borderRadius: 20,
-    padding: 10,
-    marginBottom: 10,
-    width: 200,
+    padding: 16,
     alignItems: 'center',
+    borderRadius: 4,
+    marginVertical: 8,
+    width: "90%",
   },
   buttonText: {
-    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

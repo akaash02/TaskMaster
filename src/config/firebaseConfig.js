@@ -6,12 +6,12 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  apiKey: "AIzaSyD4mDNeLw-ETdbJh6JGp5COdTQZ_SVxurI",
+  authDomain: "authtest-f3cbd.firebaseapp.com",
+  projectId: "authtest-f3cbd",
+  storageBucket: "authtest-f3cbd.appspot.com",
+  messagingSenderId: "1088554199795",
+  appId: "1:1088554199795:web:5d5b8532f0d8cbbfaaa586"
 };
 
 const app = initializeApp(firebaseConfig);

@@ -9,11 +9,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#03012E",
-      "imageStyle": {
-        "width": "50%",
-        "height": "50%"
-      }
+      "backgroundColor": "#03012E"
     },
     "ios": {
       "supportsTablet": true
@@ -23,7 +19,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.akaash02.TaskMaster"
+      "package": "com.akaash02.TaskMaster",
+      "jsEngine": "hermes"
     },
     "web": {
       "favicon": "./assets/favicon.png"

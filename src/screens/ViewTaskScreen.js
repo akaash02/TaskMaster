@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { firestore } from '../config/firebaseConfig';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { Card } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes';
+import { darkTheme, lightTheme } from '../themes/iThemeIdex';
 
 const CustomButton = ({ title, onPress, color, textColor }) => (
   <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress}>
@@ -14,7 +14,7 @@ const CustomButton = ({ title, onPress, color, textColor }) => (
   </TouchableOpacity>
 );
 
-const ViewScreen = ({ navigation, route }) => {
+const ViewTaskScreen = ({ route, navigation }) => {
   const { theme } = useContext(ThemeContext);
   const { userId, scheduleId, taskId } = route.params;
   const [task, setTask] = useState(null);
@@ -65,6 +65,13 @@ const ViewScreen = ({ navigation, route }) => {
     }
   };
 
+  const formatDate = (timestamp) => {
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate().toDateString();
+    }
+    return 'No Date';
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -86,30 +93,37 @@ const ViewScreen = ({ navigation, route }) => {
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: theme.colors.text }]}>{task.title}</Text>
       </View>
-      <Text style={[styles.header, { color: theme.colors.text }]}>Description</Text>
+      <Text style={[styles.header, { color: theme.colors.text }]}>Duration</Text>
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.text, { color: theme.colors.text }]}>{task.description}</Text>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{task.duration ? `${task.duration} hours` : 'No duration'}</Text>
       </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>Due date</Text>
+      <Text style={[styles.header, { color: theme.colors.text }]}>Difficulty</Text>
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.text, { color: theme.colors.text }]}>
-          {task.dueDate ? new Date(task.dueDate.seconds * 1000).toLocaleDateString() : 'No Due Date'}
-        </Text>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
       </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>Priority level</Text>
+      <Text style={[styles.header, { color: theme.colors.text }]}>Priority</Text>
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.text, { color: theme.colors.text }]}>{task.priority}</Text>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{task.priority || 'No priority'}</Text>
       </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>Repeat</Text>
+      {task.repeat && (
+        <>
+          <Text style={[styles.header, { color: theme.colors.text }]}>Repeat Interval</Text>
+          <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.text, { color: theme.colors.text }]}>{task.repeatInterval || 'No interval'}</Text>
+          </Card>
+        </>
+      )}
+      <Text style={[styles.header, { color: theme.colors.text }]}>Deadline</Text>
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.text, { color: theme.colors.text }]}>{task.repeat ? `Every ${task.repeatInterval} days` : 'No'}</Text>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{formatDate(task.dueDate)}</Text>
       </Card>
       <View style={styles.buttons}>
-        <CustomButton title="Edit Task" onPress={() => navigation.navigate('Task', { userId, scheduleId, taskId })} color={theme.colors.card} textColor={theme.colors.text} />
-        <CustomButton title="Back" onPress={() => navigation.navigate('Calendar', { userId, scheduleId })} color={theme.colors.card} textColor={theme.colors.text} />
-        <CustomButton title="Delete Task" onPress={deleteTask} color="red" textColor='white' />
+        <CustomButton title="Edit Task" onPress={() => navigation.navigate('EditTask', { userId, scheduleId, taskId })} color={theme.colors.text} textColor={theme.colors.background} />
+        <CustomButton title="Delete Task" onPress={deleteTask} color="red" textColor="white" />
+        <CustomButton title="Home" onPress={() => navigation.navigate('Home')} color={theme.colors.text} textColor={theme.colors.background} />
       </View>
     </View>
+    
   );
 };
 
@@ -149,15 +163,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    borderRadius: 20,
-    padding: 10,
-    marginBottom: 10,
-    width: 200,
+    padding: 16,
     alignItems: 'center',
+    borderRadius: 4,
+    marginVertical: 8,
+    width: "90%",
   },
   buttonText: {
-    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
-export default ViewScreen;
+export default ViewTaskScreen;

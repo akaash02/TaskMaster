@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { firestore } from '../config/firebaseConfig';
@@ -34,7 +34,6 @@ const EventScreen = ({ navigation, route }) => {
   const [location, setLocation] = useState('');
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
-  const [allDay, setAllDay] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState(1);
   const [isStartTimePickerVisible, setStartTimePickerVisibility] = useState(false);
@@ -51,7 +50,6 @@ const EventScreen = ({ navigation, route }) => {
           setLocation(parsedEvent.location);
           setStartTime(new Date(parsedEvent.startTime));
           setEndTime(new Date(parsedEvent.endTime));
-          setAllDay(parsedEvent.allDay);
           setRepeat(parsedEvent.repeat);
           setRepeatInterval(parsedEvent.repeatInterval);
         }
@@ -68,7 +66,6 @@ const EventScreen = ({ navigation, route }) => {
       location,
       startTime: startTime?.toISOString(),
       endTime: endTime?.toISOString(),
-      allDay,
       repeat,
       repeatInterval,
     };
@@ -109,7 +106,6 @@ const EventScreen = ({ navigation, route }) => {
         location,
         startTime,
         endTime,
-        allDay,
         repeat,
         repeatInterval,
       };
@@ -147,18 +143,6 @@ const EventScreen = ({ navigation, route }) => {
     setEndTimePickerVisibility(false);
   };
 
-  const toggleAllDay = () => {
-    setAllDay(previousState => !previousState);
-    if (!allDay) {
-      const now = new Date();
-      setStartTime(new Date(now.setHours(0, 0, 0, 0)));
-      setEndTime(new Date(now.setHours(23, 59, 59, 999)));
-    } else {
-      setStartTime(null);
-      setEndTime(null);
-    }
-  };
-
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Text h4 style={[styles.title, { color: theme.colors.text }]}>Create Event</Text>
@@ -176,39 +160,28 @@ const EventScreen = ({ navigation, route }) => {
         value={location}
         onChangeText={setLocation}
       />
-      <View style={styles.switchContainer}>
-        <Text style={[styles.label, { color: theme.colors.text }]}>All Day</Text>
-        <Switch
-          value={allDay}
-          onValueChange={toggleAllDay}
-        />
-      </View>
-      {!allDay && (
-        <>
-          <TouchableOpacity onPress={() => setStartTimePickerVisibility(true)}>
-            <Text style={[styles.input, { color: theme.colors.text }]}>
-              {startTime ? startTime.toLocaleString() : 'Start Time'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setEndTimePickerVisibility(true)}>
-            <Text style={[styles.input, { color: theme.colors.text }]}>
-              {endTime ? endTime.toLocaleString() : 'End Time'}
-            </Text>
-          </TouchableOpacity>
-          <DateTimePickerModal
-            isVisible={isStartTimePickerVisible}
-            mode="datetime"
-            onConfirm={handleStartTimeConfirm}
-            onCancel={() => setStartTimePickerVisibility(false)}
-          />
-          <DateTimePickerModal
-            isVisible={isEndTimePickerVisible}
-            mode="datetime"
-            onConfirm={handleEndTimeConfirm}
-            onCancel={() => setEndTimePickerVisibility(false)}
-          />
-        </>
-      )}
+      <TouchableOpacity onPress={() => setStartTimePickerVisibility(true)}>
+        <Text style={[styles.input, { color: theme.colors.text }]}>
+          {startTime ? startTime.toLocaleString() : 'Start Time'}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setEndTimePickerVisibility(true)}>
+        <Text style={[styles.input, { color: theme.colors.text }]}>
+          {endTime ? endTime.toLocaleString() : 'End Time'}
+        </Text>
+      </TouchableOpacity>
+      <DateTimePickerModal
+        isVisible={isStartTimePickerVisible}
+        mode="datetime"
+        onConfirm={handleStartTimeConfirm}
+        onCancel={() => setStartTimePickerVisibility(false)}
+      />
+      <DateTimePickerModal
+        isVisible={isEndTimePickerVisible}
+        mode="datetime"
+        onConfirm={handleEndTimeConfirm}
+        onCancel={() => setEndTimePickerVisibility(false)}
+      />
       <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.card }]}>
         <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Event</Text>
       </TouchableOpacity>
@@ -243,15 +216,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: 'bold',
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  label: {
-    fontSize: 16,
   },
   offlineText: {
     textAlign: 'center',

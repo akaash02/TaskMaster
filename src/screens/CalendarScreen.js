@@ -9,7 +9,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes';
+import { darkTheme, lightTheme } from '../themes/iThemeIdex';
 import NavBar from '../components/NavBar';
 
 const CalendarScreen = ({ navigation, route }) => {
@@ -166,14 +166,13 @@ const CalendarScreen = ({ navigation, route }) => {
               {tasks.map(task => (
                 <TouchableOpacity 
                   key={task.id} 
-                  onPress={() => navigation.navigate('View', { userId, scheduleId, taskId: task.id })}>
+                  onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
                   <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {task.title}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Description: {task.description}</Text>
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-                    {task.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {task.repeatInterval}</Text>}
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>{task.dueDate.toDate().toDateString()}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Difficulty: {task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -186,9 +185,6 @@ const CalendarScreen = ({ navigation, route }) => {
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>Location: {event.location}</Text>
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
-                    {event.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {event.repeatInterval}</Text>}
                   </View>
                 </TouchableOpacity>
               ))}

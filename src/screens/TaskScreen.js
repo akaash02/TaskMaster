@@ -31,6 +31,8 @@ const TaskScreen = ({ navigation, route }) => {
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState(null);
   const [priority, setPriority] = useState(1); // Default priority to 1
+  const [duration, setDuration] = useState(''); // New field for duration
+  const [difficulty, setDifficulty] = useState(''); // New field for difficulty
   const [isDueDatePickerVisible, setDueDatePickerVisibility] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +45,8 @@ const TaskScreen = ({ navigation, route }) => {
           setTitle(parsedTask.title);
           setDueDate(new Date(parsedTask.dueDate));
           setPriority(parsedTask.priority);
+          setDuration(parsedTask.duration); // Load duration from draft
+          setDifficulty(parsedTask.difficulty); // Load difficulty from draft
         }
       } catch (error) {
         console.error('Error loading draft task:', error);
@@ -56,6 +60,8 @@ const TaskScreen = ({ navigation, route }) => {
       title,
       dueDate: dueDate?.toISOString(),
       priority,
+      duration,
+      difficulty,
     };
     try {
       await AsyncStorage.setItem(`draftTask-${userId}-${scheduleId}`, JSON.stringify(taskData));
@@ -93,6 +99,8 @@ const TaskScreen = ({ navigation, route }) => {
         title,
         dueDate,
         priority,
+        duration,
+        difficulty,
       };
 
       const netInfo = await NetInfo.fetch();
@@ -147,6 +155,22 @@ const TaskScreen = ({ navigation, route }) => {
         onConfirm={handleDueDateConfirm}
         onCancel={() => setDueDatePickerVisibility(false)}
       />
+      <TextInput
+        style={[styles.input, { borderColor: theme.colors.text, color: theme.colors.text }]}
+        placeholder="Duration (in hours)"
+        placeholderTextColor={theme.colors.placeholder}
+        value={duration}
+        onChangeText={setDuration}
+        keyboardType="numeric"
+      />
+      <TextInput
+        style={[styles.input, { borderColor: theme.colors.text, color: theme.colors.text }]}
+        placeholder="Difficulty (1-5)"
+        placeholderTextColor={theme.colors.placeholder}
+        value={difficulty}
+        onChangeText={setDifficulty}
+        keyboardType="numeric"
+      />
       <View style={styles.priorityContainer}>
         <Text style={[styles.label, { color: theme.colors.text }]}>Priority:</Text>
         <TouchableOpacity
@@ -180,8 +204,8 @@ const TaskScreen = ({ navigation, route }) => {
       <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.card }]}>
         <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save Task</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Home</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.text }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Home</Text>
       </TouchableOpacity>
       <Text style={[styles.offlineText, { color: theme.colors.text }]}>If offline just click save once and press home</Text>
     </ScrollView>
