@@ -1,86 +1,76 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Alert } from 'react-native';
-import { firestore } from '../config/firebaseConfig';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { firestore, auth } from '../config/firebaseConfig';
+import { useFocusEffect } from '@react-navigation/native';
 import { ThemeContext } from '../navigation/AppNavigator';
-import AddTimeSlotScreen from './AddTimeSlotScreen';
 
-const TimeSlotScreen = ({ navigation, route }) => {
-  const userId = route?.params?.userId;
+const TimeSlotScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
-  const [selectedDay, setSelectedDay] = useState('Monday');
   const [timeSlots, setTimeSlots] = useState([]);
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Custom'];
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
+  
 
   useEffect(() => {
-    fetchTimeSlots();
-  }, [selectedDay]);
+    const fetchUserId = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        setUserId(currentUser.uid);
+      }
+    };
+    fetchUserId();
+  }, []);
 
-  const fetchTimeSlots = async () => {
-    if (!userId) return;
-    const slotsCollectionRef = collection(firestore, 'users', userId, 'freeTimeSlots');
-    const q = selectedDay === 'Custom'
-      ? query(slotsCollectionRef, where('isCustom', '==', true))
-      : query(slotsCollectionRef, where('dayOfWeek', '==', selectedDay));
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTimeSlots = async () => {
+        if (!userId) return;
+        try {
+          const slotsCollectionRef = collection(firestore, 'users', userId, 'freeTimeSlots');
+          const querySnapshot = await getDocs(slotsCollectionRef);
+          const slotsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setTimeSlots(slotsList);
+          setLoading(false);
+        } catch (error) {
+          console.error('Error fetching time slots:', error);
+          setLoading(false);
+        }
+      };
 
-    const querySnapshot = await getDocs(q);
-    const fetchedSlots = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-    setTimeSlots(fetchedSlots);
-  };
-
-  const handleDeleteSlot = async (slotId) => {
-    try {
-      await deleteDoc(doc(firestore, 'users', userId, 'freeTimeSlots', slotId));
       fetchTimeSlots();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to delete time slot');
-    }
-  };
+    }, [userId])
+  );
 
-  const navigateToAddTimeSlot = () => {
-    navigation.navigate('AddTimeSlot');
+  const formatMinutes = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const adjustedHours = hours % 12 || 12;
+    const formattedMinutes = mins < 10 ? `0${mins}` : mins;
+    return `${adjustedHours}:${formattedMinutes} ${ampm}`;
   };
 
   return (
-    
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.colors.card }]}
-        onPress={navigateToAddTimeSlot}
-      >
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.headerText, { color: theme.colors.text }]}>Weekly Time Slots</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {loading ? (
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
+        ) : (
+          timeSlots.map((slot) => (
+            <View key={slot.id} style={[styles.timeSlotCard, { backgroundColor: theme.colors.card }]}>
+              <Text style={[styles.timeSlotText, { color: theme.colors.text }]}>
+                {slot.dayOfWeek}: {formatMinutes(slot.startTime)} - {formatMinutes(slot.endTime)}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={() => navigation.navigate('AddTimeSlot')}>
         <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Add Time Slot</Text>
       </TouchableOpacity>
-      <Text style={[styles.title, { color: theme.colors.text }]}>View Time Slots</Text>
-      <ScrollView horizontal style={styles.daySelector}>
-        {daysOfWeek.map(day => (
-          <TouchableOpacity
-            key={day}
-            style={[
-              styles.dayButton,
-              selectedDay === day && { backgroundColor: theme.colors.primary },
-            ]}
-            onPress={() => setSelectedDay(day)}
-          >
-            <Text style={[styles.dayButtonText, selectedDay === day && { color: theme.colors.background }]}>{day}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-      <View style={styles.timeSlotList}>
-        {timeSlots.map(slot => (
-          <View key={slot.id} style={styles.timeSlot}>
-            <Text style={[styles.slotText, { color: theme.colors.text }]}>
-              {slot.start.toDate().toLocaleString()} - {slot.end.toDate().toLocaleString()}
-            </Text>
-            <TouchableOpacity
-              style={[styles.deleteButton, { backgroundColor: theme.colors.error }]}
-              onPress={() => handleDeleteSlot(slot.id)}
-            >
-              <Text style={[styles.buttonText, { color: theme.colors.background }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -88,51 +78,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    marginTop: "5%",
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  scrollContainer: {
+    paddingBottom: 16,
+  },
+  loadingText: {
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  timeSlotCard: {
+    padding: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+  },
+  timeSlotText: {
+    fontSize: 16,
   },
   addButton: {
     padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    borderRadius: 4,
-    marginVertical: 8,
+    marginTop: 16,
   },
   buttonText: {
     fontWeight: 'bold',
-  },
-  title: {
-    textAlign: 'center',
-    marginVertical: 16,
-    fontSize: 20,
-  },
-  daySelector: {
-    flexDirection: 'row',
-    marginVertical: 8,
-  },
-  dayButton: {
-    padding: 10,
-    borderRadius: 4,
-    marginHorizontal: 4,
-    borderWidth: 1,
-  },
-  dayButtonText: {
-    fontWeight: 'bold',
-  },
-  timeSlotList: {
-    marginTop: 16,
-  },
-  timeSlot: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-  },
-  slotText: {
-    fontSize: 16,
-  },
-  deleteButton: {
-    padding: 8,
-    borderRadius: 4,
   },
 });
 

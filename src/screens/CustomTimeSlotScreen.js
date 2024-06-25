@@ -1,89 +1,114 @@
-import React, { useState, useContext } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Alert } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, Text, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { ThemeContext } from '../navigation/AppNavigator'; 
 import { firestore } from '../config/firebaseConfig';
-import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { ThemeContext } from '../navigation/AppNavigator';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const CustomTimeSlotScreen = ({ navigation, route }) => {
-  const userId = route?.params?.userId;
   const { theme } = useContext(ThemeContext);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [isStartPickerVisible, setStartPickerVisibility] = useState(false);
-  const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
+  const userId = route.params?.userId;
+  const [start, setStart] = useState(null);
+  const [end, setEnd] = useState(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
-  const handleConfirmStart = (date) => {
-    setStartDate(date);
-    setStartPickerVisibility(false);
+  const handleStartChange = (event, selectedTime) => {
+    if (selectedTime) {
+      setStart(selectedTime);
+    }
+    setShowStartPicker(false);
   };
 
-  const handleConfirmEnd = (date) => {
-    setEndDate(date);
-    setEndPickerVisibility(false);
+  const handleEndChange = (event, selectedTime) => {
+    if (selectedTime) {
+      setEnd(selectedTime);
+    }
+    setShowEndPicker(false);
   };
 
-  const handleSave = async () => {
-    if (!startDate || !endDate) {
-      Alert.alert('Error', 'Please select both start and end times.');
-      return;
-    }
-    if (startDate >= endDate) {
-      Alert.alert('Error', 'Start time must be before end time.');
-      return;
-    }
+  const formatDateTime = (date) => {
+    if (!date) return '';
+    return date.toLocaleString();
+  };
 
-    const slotsCollectionRef = collection(firestore, 'users', userId, 'freeTimeSlots');
-    const overlappingQuery = query(slotsCollectionRef, 
-      where('start', '<=', Timestamp.fromDate(endDate)),
-      where('end', '>=', Timestamp.fromDate(startDate))
-    );
-    const querySnapshot = await getDocs(overlappingQuery);
-
-    if (!querySnapshot.empty) {
-      Alert.alert('Error', 'The selected time slot overlaps with an existing one.');
-      return;
-    }
-
+  const handleAddCustomTimeSlot = async () => {
     try {
+      if (!userId) {
+        Alert.alert('Error', 'User ID is not available.');
+        return;
+      }
+
+      if (!start || !end) {
+        Alert.alert('Invalid Time Slot', 'Please select both start and end times.');
+        return;
+      }
+
+      if (start >= end) {
+        Alert.alert('Invalid Time Slot', 'Please ensure the start time is before the end time.');
+        return;
+      }
+
+      const slotsCollectionRef = collection(firestore, 'users', userId, 'freeTimeSlots');
+      const q = query(slotsCollectionRef, where('isCustom', '==', true));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const overlapping = querySnapshot.docs.some(doc => {
+          const ts = doc.data();
+          const tsStart = ts.start ? ts.start.toDate() : null;
+          const tsEnd = ts.end ? ts.end.toDate() : null;
+          return tsStart && tsEnd && (start < tsEnd && end > tsStart);
+        });
+
+        if (overlapping) {
+          Alert.alert('Time Slot Conflict', 'The selected time slot overlaps with an existing one.');
+          return;
+        }
+      }
+
       await addDoc(slotsCollectionRef, {
-        start: Timestamp.fromDate(startDate),
-        end: Timestamp.fromDate(endDate),
+        start,
+        end,
         isCustom: true
       });
+
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save time slot');
+      console.error('Error adding custom time slot:', error);
+      Alert.alert('Error', 'Failed to add custom time slot.');
     }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <TouchableOpacity onPress={() => setStartPickerVisibility(true)} style={styles.pickerButton}>
-        <Text style={[styles.pickerText, { color: theme.colors.text }]}>
-          {startDate ? startDate.toLocaleString() : 'Select Start Time'}
-        </Text>
+      <Text style={[styles.label, { color: theme.colors.text }]}>Select Start Date and Time</Text>
+      <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.timePicker}>
+        <Text style={styles.timeText}>{formatDateTime(start) || 'Select Date and Time'}</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => setEndPickerVisibility(true)} style={styles.pickerButton}>
-        <Text style={[styles.pickerText, { color: theme.colors.text }]}>
-          {endDate ? endDate.toLocaleString() : 'Select End Time'}
-        </Text>
+      {showStartPicker && (
+        <DateTimePicker
+          value={start || new Date()}
+          mode="datetime"
+          display="default"
+          onChange={handleStartChange}
+        />
+      )}
+      <Text style={[styles.label, { color: theme.colors.text }]}>Select End Date and Time</Text>
+      <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.timePicker}>
+        <Text style={styles.timeText}>{formatDateTime(end) || 'Select Date and Time'}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.saveButton, { backgroundColor: theme.colors.card }]} onPress={handleSave}>
-        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save</Text>
+      {showEndPicker && (
+        <DateTimePicker
+          value={end || new Date()}
+          mode="datetime"
+          display="default"
+          onChange={handleEndChange}
+        />
+      )}
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={handleAddCustomTimeSlot}>
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Add Custom Time Slot</Text>
       </TouchableOpacity>
-      <DateTimePickerModal
-        isVisible={isStartPickerVisible}
-        mode="datetime"
-        onConfirm={handleConfirmStart}
-        onCancel={() => setStartPickerVisibility(false)}
-      />
-      <DateTimePickerModal
-        isVisible={isEndPickerVisible}
-        mode="datetime"
-        onConfirm={handleConfirmEnd}
-        onCancel={() => setEndPickerVisibility(false)}
-      />
     </View>
   );
 };
@@ -91,20 +116,23 @@ const CustomTimeSlotScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     padding: 16,
   },
-  pickerButton: {
+  label: {
+    fontSize: 16,
+    marginVertical: 8,
+  },
+  timePicker: {
     padding: 16,
-    alignItems: 'center',
     borderWidth: 1,
     borderRadius: 4,
     marginVertical: 8,
+    alignItems: 'center',
   },
-  pickerText: {
-    fontWeight: 'bold',
+  timeText: {
+    fontSize: 16,
   },
-  saveButton: {
+  addButton: {
     padding: 16,
     alignItems: 'center',
     borderRadius: 4,
