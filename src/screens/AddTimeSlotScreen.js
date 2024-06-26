@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, Switch } from 'react-native';
 import { ThemeContext } from '../navigation/AppNavigator'; 
 import { firestore } from '../config/firebaseConfig';
 import { collection, addDoc, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
@@ -13,6 +13,7 @@ const AddTimeSlotScreen = ({ navigation, route }) => {
   const [day, setDay] = useState('Monday');
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
+  const [isCustom, setIsCustom] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
@@ -65,7 +66,7 @@ const AddTimeSlotScreen = ({ navigation, route }) => {
     return `${adjustedHours}:${formattedMinutes} ${ampm}`;
   };
 
-  const handleAddWeeklyTimeSlot = async () => {
+  const handleAddTimeSlot = async () => {
     try {
       if (!userId) {
         Alert.alert('Error', 'User ID is not available.');
@@ -85,7 +86,7 @@ const AddTimeSlotScreen = ({ navigation, route }) => {
         return;
       }
 
-      const slotsCollectionRef = collection(firestore, 'users', userId, 'freeTimeSlots');
+      const slotsCollectionRef = collection(firestore, 'users', userId, 'freetimeslots');
       const q = query(slotsCollectionRef, where('dayOfWeek', '==', day));
       const querySnapshot = await getDocs(q);
 
@@ -105,7 +106,7 @@ const AddTimeSlotScreen = ({ navigation, route }) => {
         dayOfWeek: day,
         startTime: startMinutes,
         endTime: endMinutes,
-        isCustom: false
+        isCustom: isCustom
       });
 
       navigation.goBack();
@@ -117,11 +118,11 @@ const AddTimeSlotScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.label, { color: theme.colors.text }]}>Select Day of Week</Text>
+      <Text style={[styles.headerText, { color: theme.colors.text }]}>Select Day of Week</Text>
       <Picker
         selectedValue={day}
         onValueChange={(itemValue) => setDay(itemValue)}
-        style={styles.picker}
+        style={[styles.picker, { backgroundColor: theme.colors.card }]}
       >
         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
           <Picker.Item key={day} label={day} value={day} />
@@ -153,8 +154,11 @@ const AddTimeSlotScreen = ({ navigation, route }) => {
           onChange={handleEndTimeChange}
         />
       )}
-      <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={handleAddWeeklyTimeSlot}>
-        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Add Time Slot</Text>
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.text }]} onPress={handleAddTimeSlot}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Add Time Slot</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('TimeSlot')} style={[styles.addButton, { backgroundColor: theme.colors.text }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -164,13 +168,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 26,
   },
-  label: {
-    fontSize: 16,
-    marginVertical: 8,
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 16,
   },
   picker: {
+    padding: 16,
     marginVertical: 8,
+    borderRadius: 8,
   },
   timePicker: {
     padding: 16,
@@ -190,6 +199,11 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: 'bold',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
   },
 });
 

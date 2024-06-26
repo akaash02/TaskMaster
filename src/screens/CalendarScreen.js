@@ -171,6 +171,8 @@ const CalendarScreen = ({ navigation, route }) => {
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {task.title}</Text>
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
                     <Text style={[styles.itemText, { color: theme.colors.text }]}>{task.dueDate.toDate().toDateString()}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Start Time: {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>End Time: {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Difficulty: {task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
                   </View>

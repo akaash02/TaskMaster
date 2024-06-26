@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { firestore } from '../config/firebaseConfig';
 import { ThemeContext } from '../navigation/AppNavigator';
@@ -19,8 +19,9 @@ const EditTaskScreen = ({ route, navigation }) => {
   const [duration, setDuration] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [priority, setPriority] = useState('');
-  const [repeat, setRepeat] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -32,8 +33,9 @@ const EditTaskScreen = ({ route, navigation }) => {
           setDuration(taskData.duration || '');
           setDifficulty(taskData.difficulty || '');
           setPriority(taskData.priority || '');
-          setRepeat(taskData.repeat || '');
           setDeadline(taskData.deadline || '');
+          setStartTime(taskData.startTime || '');
+          setEndTime(taskData.endTime || '');
         }
       } catch (error) {
         Alert.alert("Error fetching task", error.message);
@@ -50,8 +52,9 @@ const EditTaskScreen = ({ route, navigation }) => {
         duration,
         difficulty,
         priority,
-        repeat: repeat || '',
         deadline,
+        startTime,
+        endTime,
       }, { merge: true });
       navigation.navigate('Home');
     } catch (error) {
@@ -60,7 +63,7 @@ const EditTaskScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: theme.colors.text }]}>Edit Task</Text>
       </View>
@@ -96,14 +99,6 @@ const EditTaskScreen = ({ route, navigation }) => {
           onChangeText={setPriority}
         />
       </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>Repeat</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <TextInput
-          style={[styles.input, { color: theme.colors.text }]}
-          value={repeat}
-          onChangeText={setRepeat}
-        />
-      </Card>
       <Text style={[styles.header, { color: theme.colors.text }]}>Deadline</Text>
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
         <TextInput
@@ -112,11 +107,27 @@ const EditTaskScreen = ({ route, navigation }) => {
           onChangeText={setDeadline}
         />
       </Card>
+      <Text style={[styles.header, { color: theme.colors.text }]}>Start Time</Text>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <TextInput
+          style={[styles.input, { color: theme.colors.text }]}
+          value={startTime}
+          onChangeText={setStartTime}
+        />
+      </Card>
+      <Text style={[styles.header, { color: theme.colors.text }]}>End Time</Text>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <TextInput
+          style={[styles.input, { color: theme.colors.text }]}
+          value={endTime}
+          onChangeText={setEndTime}
+        />
+      </Card>
       <View style={styles.buttons}>
         <CustomButton title="Save Task" onPress={handleSaveTask} color={theme.colors.card} textColor={theme.colors.text} />
         <CustomButton title="Home" onPress={() => navigation.navigate('Home')} color={theme.colors.card} textColor={theme.colors.text} />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 

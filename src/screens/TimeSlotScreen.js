@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { firestore, auth } from '../config/firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 import { ThemeContext } from '../navigation/AppNavigator';
+import { Icon } from 'react-native-elements';
 
 const TimeSlotScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
-  
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -27,7 +27,7 @@ const TimeSlotScreen = ({ navigation }) => {
       const fetchTimeSlots = async () => {
         if (!userId) return;
         try {
-          const slotsCollectionRef = collection(firestore, 'users', userId, 'freeTimeSlots');
+          const slotsCollectionRef = collection(firestore, 'users', userId, 'freetimeslots');
           const querySnapshot = await getDocs(slotsCollectionRef);
           const slotsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTimeSlots(slotsList);
@@ -41,6 +41,15 @@ const TimeSlotScreen = ({ navigation }) => {
       fetchTimeSlots();
     }, [userId])
   );
+
+  const deleteTimeSlot = async (slotId) => {
+    try {
+      await deleteDoc(doc(firestore, 'users', userId, 'freetimeslots', slotId));
+      setTimeSlots(timeSlots.filter(slot => slot.id !== slotId));
+    } catch (error) {
+      console.error('Error deleting time slot:', error);
+    }
+  };
 
   const formatMinutes = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -58,17 +67,25 @@ const TimeSlotScreen = ({ navigation }) => {
         {loading ? (
           <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
         ) : (
-          timeSlots.map((slot) => (
-            <View key={slot.id} style={[styles.timeSlotCard, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.timeSlotText, { color: theme.colors.text }]}>
-                {slot.dayOfWeek}: {formatMinutes(slot.startTime)} - {formatMinutes(slot.endTime)}
-              </Text>
-            </View>
-          ))
+          timeSlots
+            .filter(slot => !slot.isCustom)
+            .map((slot) => (
+              <View key={slot.id} style={[styles.timeSlotCard, { backgroundColor: theme.colors.card }]}>
+                <Text style={[styles.timeSlotText, { color: theme.colors.text }]}>
+                  {slot.dayOfWeek}: {formatMinutes(slot.startTime)} - {formatMinutes(slot.endTime)}
+                </Text>
+                <TouchableOpacity onPress={() => deleteTimeSlot(slot.id)}>
+                  <Icon name="delete" type="material" color={theme.colors.text} />
+                </TouchableOpacity>
+              </View>
+            ))
         )}
       </ScrollView>
-      <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={() => navigation.navigate('AddTimeSlot')}>
-        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Add Time Slot</Text>
+      <TouchableOpacity style={[styles.timeSlotCard, { backgroundColor: theme.colors.text }]} onPress={() => navigation.navigate('AddTimeSlot')}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Add Time Slot</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.timeSlotCard, { backgroundColor: theme.colors.text }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Home</Text>
       </TouchableOpacity>
     </View>
   );
@@ -93,6 +110,9 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   timeSlotCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
     marginVertical: 8,
     borderRadius: 8,

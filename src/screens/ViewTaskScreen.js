@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { firestore } from '../config/firebaseConfig';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { Card } from 'react-native-elements';
@@ -72,6 +72,13 @@ const ViewTaskScreen = ({ route, navigation }) => {
     return 'No Date';
   };
 
+  const formatTime = (timestamp) => {
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate().toLocaleTimeString();
+    }
+    return 'No Time';
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -89,7 +96,7 @@ const ViewTaskScreen = ({ route, navigation }) => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: theme.colors.text }]}>{task.title}</Text>
       </View>
@@ -117,12 +124,20 @@ const ViewTaskScreen = ({ route, navigation }) => {
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatDate(task.dueDate)}</Text>
       </Card>
+      <Text style={[styles.header, { color: theme.colors.text }]}>Start Time</Text>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{formatTime(task.startTime)}</Text>
+      </Card>
+      <Text style={[styles.header, { color: theme.colors.text }]}>End Time</Text>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{formatTime(task.endTime)}</Text>
+      </Card>
       <View style={styles.buttons}>
         <CustomButton title="Edit Task" onPress={() => navigation.navigate('EditTask', { userId, scheduleId, taskId })} color={theme.colors.text} textColor={theme.colors.background} />
         <CustomButton title="Delete Task" onPress={deleteTask} color="red" textColor="white" />
         <CustomButton title="Home" onPress={() => navigation.navigate('Home')} color={theme.colors.text} textColor={theme.colors.background} />
       </View>
-    </View>
+    </ScrollView>
     
   );
 };
@@ -161,6 +176,7 @@ const styles = StyleSheet.create({
   buttons: {
     marginTop: 20,
     alignItems: 'center',
+    marginBottom: "20%",
   },
   button: {
     padding: 16,

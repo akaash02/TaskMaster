@@ -9,6 +9,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { CommonActions } from '@react-navigation/native';
 import { ThemeContext } from '../navigation/AppNavigator';
 
+import { fetchAndScheduleTasks } from '../components/taskUtils';
+
 const TaskScreen = ({ navigation, route }) => {
   const userId = route?.params?.userId;
   const scheduleId = route?.params?.scheduleId;
@@ -62,6 +64,8 @@ const TaskScreen = ({ navigation, route }) => {
       priority,
       duration,
       difficulty,
+      startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
+      endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
     };
     try {
       await AsyncStorage.setItem(`draftTask-${userId}-${scheduleId}`, JSON.stringify(taskData));
@@ -101,15 +105,22 @@ const TaskScreen = ({ navigation, route }) => {
         priority,
         duration,
         difficulty,
+        startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
+        endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
       };
-
+  
       const netInfo = await NetInfo.fetch();
       console.log('Network info:', netInfo);
-
+  
       if (netInfo.isConnected) {
         const tasksCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
         await addDoc(tasksCollectionRef, taskData);
         console.log('Task saved to firestore:', taskData);
+        
+        // Call fetchAndScheduleTasks to schedule tasks after saving
+        console.log('Calling fetchAndScheduleTasks');
+        await fetchAndScheduleTasks(userId, scheduleId);
+        console.log('fetchAndScheduleTasks completed');
         navigation.navigate('Home');
       } else {
         console.log('Saving task offline:', taskData);
@@ -124,6 +135,7 @@ const TaskScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
+  
 
   const handleDueDateConfirm = (date) => {
     setDueDate(date);
@@ -222,51 +234,44 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   input: {
+    height: 40,
     borderWidth: 1,
-    padding: 8,
-    marginVertical: 8,
-    borderRadius: 4,
-  },
-  button: {
-    padding: 16,
-    alignItems: 'center',
-    borderRadius: 4,
+    paddingHorizontal: 8,
     marginVertical: 8,
   },
-  buttonText: {
-    fontWeight: 'bold',
-  },
-  switchContainer: {
+  priorityContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 8,
+    justifyContent: 'space-around',
+    marginVertical: 16,
   },
   label: {
     fontSize: 16,
   },
-  offlineText: {
-    textAlign: 'center',
-    marginTop: 20,
+  priorityButton: {
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: 4,
   },
-  errorText: {
-    textAlign: 'center',
-    color: 'red',
+  priorityButtonText: {
+    fontSize: 16,
   },
-  priorityContainer: {
-    flexDirection: 'row',
+  button: {
+    padding: 12,
+    borderRadius: 4,
     alignItems: 'center',
     marginVertical: 8,
   },
-  priorityButton: {
-    borderWidth: 1,
-    padding: 8,
-    marginHorizontal: 4,
-    borderRadius: 4,
+  buttonText: {
+    fontSize: 16,
   },
-  priorityButtonText: {},
   offlineText: {
     textAlign: 'center',
+    marginTop: 16,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 16,
   },
 });
 
