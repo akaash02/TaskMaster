@@ -1,5 +1,3 @@
-// /src/screens/FriendsScreen.js
-
 import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Header, Text } from 'react-native-elements';

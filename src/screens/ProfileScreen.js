@@ -1,5 +1,3 @@
-// /src/screens/ProfileScreen.js
-
 import React, { useContext } from 'react';
 import { View, StyleSheet, Alert, TouchableOpacity, Text, Switch } from 'react-native';
 import { Header } from 'react-native-elements';

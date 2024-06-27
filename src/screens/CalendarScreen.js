@@ -1,5 +1,3 @@
-// /src/screens/CalendarScreen.js
-
 import React, { useState, useCallback, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Header, Text, Icon } from 'react-native-elements';
