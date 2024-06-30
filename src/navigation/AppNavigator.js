@@ -17,7 +17,7 @@ import EventScreen from '../screens/EventScreen';
 import ViewEventScreen from '../screens/ViewEventScreen';
 import TimeSlotScreen from '../screens/TimeSlotScreen';
 import AddTimeSlotScreen from '../screens/AddTimeSlotScreen';
-import { darkTheme, lightTheme } from '../themes/iThemeIdex';
+import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const Stack = createStackNavigator();

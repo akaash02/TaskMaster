@@ -7,7 +7,7 @@ import { collection, doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes/iThemeIdex';
+import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -148,7 +148,6 @@ const HomeScreen = ({ navigation }) => {
                   <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {task.title || 'No title'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Priority: {task.priority || 'No priority'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Due Date: {task.dueDate ? new Date(task.dueDate).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No due date'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Start Time: {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>End Time: {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
@@ -263,11 +262,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   weekDayText: {
-    fontSize: 20,
+    fontSize: 15,
     textAlign: 'center',
   },
   currentWeekDayText: {
-    fontSize: 20,
+    fontSize: 15,
     textAlign: 'center',
   },
 });

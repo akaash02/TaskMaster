@@ -1,12 +1,11 @@
-// /src/themes/index.js
 
 export const darkTheme = {
     dark: true,
     colors: {
       primary: '#BB86FC',
-      background: 'black',
-      card: '#313338',
-      text: '#fff',
+      background: '#040046',
+      card: '#215084',
+      text: '#EDEEEF',
       border: '#272727',
       notification: '#BB86FC',
     },
@@ -16,10 +15,10 @@ export const darkTheme = {
     dark: false,
     colors: {
       primary: '#fff',
-      background: 'white',
-      card: 'lightgrey',
-      text: 'black',
-      border: '#E0E0E0',
+      background: '#E8F0FE',
+      card: '#99C4ED',
+      text: '#1E4289',
+      border: '#1E4289',
       notification: '#6200ee',
     },
   };

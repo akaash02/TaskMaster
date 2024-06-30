@@ -1,12 +1,12 @@
 import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { firestore } from '../config/firebaseConfig';
-import { Timestamp } from 'firebase/firestore';
 
 export async function fetchAndScheduleTasks(userId, scheduleId) {
   try {
     const tasksRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
     const freeTimeSlotsRef = collection(firestore, 'users', userId, 'freetimeslots');
-  
+    const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
+
     const tasksSnapshot = await getDocs(tasksRef);
     let tasks = [];
     tasksSnapshot.forEach(doc => {
@@ -15,7 +15,7 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
       task.dueDate = task.dueDate.toDate(); // Ensure dueDate is converted to Date
       tasks.push(task);
     });
-  
+
     const freeTimeSlotsSnapshot = await getDocs(freeTimeSlotsRef);
     let freeTimeSlots = [];
     freeTimeSlotsSnapshot.forEach(doc => {
@@ -23,7 +23,17 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
       slot.id = doc.id;
       freeTimeSlots.push(slot);
     });
-  
+
+    const eventsSnapshot = await getDocs(eventsRef);
+    let events = [];
+    eventsSnapshot.forEach(doc => {
+      let event = doc.data();
+      event.id = doc.id;
+      event.startTime = event.startTime.toDate();
+      event.endTime = event.endTime.toDate();
+      events.push(event);
+    });
+
     tasks.sort((a, b) => {
       if (a.priority !== b.priority) {
         return b.priority - a.priority;
@@ -36,7 +46,8 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
 
     console.log('Sorted tasks:', tasks);
     console.log('Free time slots:', freeTimeSlots);
-  
+    console.log('Events:', events);
+
     for (let task of tasks) {
       console.log(`Scheduling task: ${task.title} with dueDate: ${task.dueDate}`);
       for (let slot of freeTimeSlots) {
@@ -51,7 +62,7 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
             let startTime = getSlotDate(slot, task.dueDate, slot.startTime);
             let endTime = addMinutes(startTime, taskDuration);
 
-            if (endTime <= getSlotDate(slot, task.dueDate, slot.endTime)) {
+            if (endTime <= getSlotDate(slot, task.dueDate, slot.endTime) && !isClashingWithEvents(startTime, endTime, events)) {
               console.log(`Task: ${task.title}`);
               console.log(`Planned Start Time: ${startTime.toISOString()}`);
               console.log(`Planned End Time: ${endTime.toISOString()}`);
@@ -64,7 +75,7 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
               slot.startTime = getSlotTimeInMinutes(endTime); // Update the startTime of the slot
               break;
             } else {
-              console.log('End time exceeds slot end time');
+              console.log('End time exceeds slot end time or clashing with an event');
             }
           } else {
             console.log('Slot duration is less than task duration');
@@ -96,6 +107,16 @@ function isValidWeeklySlot(slot, dueDate) {
   return slotDayIndex < taskDay;
 }
 
+function isClashingWithEvents(startTime, endTime, events) {
+  for (let event of events) {
+    if ((startTime >= event.startTime && startTime < event.endTime) ||
+        (endTime > event.startTime && endTime <= event.endTime) ||
+        (startTime <= event.startTime && endTime >= event.endTime)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function getSlotTimeInMinutes(date) {
   return date.getHours() * 60 + date.getMinutes();
@@ -124,7 +145,6 @@ function getSlotDate(slot, dueDate, slotTimeInMinutes) {
 
   return date;
 }
-
 
 function addMinutes(date, minutes) {
   return new Date(date.getTime() + minutes * 60000);

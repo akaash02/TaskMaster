@@ -5,7 +5,7 @@ import { auth, firestore } from '../config/firebaseConfig';
 import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes/iThemeIdex';
+import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import NavBar from '../components/NavBar'; // Import the NavBar component
 
 const ProfileScreen = ({ navigation }) => {
@@ -57,21 +57,6 @@ const ProfileScreen = ({ navigation }) => {
     const newTheme = isDarkMode ? lightTheme : darkTheme;
     setTheme(newTheme);
     saveThemePreference(newTheme.dark ? 'dark' : 'light');
-    Alert.alert(
-      'Theme Changed',
-      'You have changed the theme. Please log out and log in again to apply the changes.',
-      [
-        {
-          text: 'Log Out Now',
-          onPress: handleLogout,
-        },
-        {
-          text: 'Later',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: false }
-    );
   };
 
   return (
@@ -93,13 +78,16 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={[styles.buttonText, { color: theme.colors.text }]}>Delete Profile</Text>
         </TouchableOpacity>
         <View style={styles.switchContainer}>
-          <Text style={{ color: theme.colors.text }}>Dark Mode</Text>
+          <Text style={{ color: theme.colors.text }}>Dark Mode </Text>
           <Switch
             value={isDarkMode}
             onValueChange={toggleTheme}
             trackColor={{ false: '#767577', true: '#81b0ff' }}
             thumbColor={isDarkMode ? '#f5dd4b' : '#f4f3f4'}
           />
+        </View>
+        <View style={styles.switchContainer}>
+        <Text style={{ color: theme.colors.text}}>Please log out and log in again if dark mode is not rendering properly.</Text>
         </View>
       </View>
       <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />

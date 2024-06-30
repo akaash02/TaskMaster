@@ -6,7 +6,7 @@ import { Card } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { ThemeContext } from '../navigation/AppNavigator'; // Ensure correct path
-import { darkTheme, lightTheme } from '../themes/iThemeIdex';
+import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 
 const CustomButton = ({ title, onPress, color, textColor }) => (
   <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress}>

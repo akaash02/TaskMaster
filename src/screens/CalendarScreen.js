@@ -7,7 +7,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes/iThemeIdex';
+import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import NavBar from '../components/NavBar';
 
 const CalendarScreen = ({ navigation, route }) => {
@@ -69,7 +69,6 @@ const CalendarScreen = ({ navigation, route }) => {
             key={task.id} 
             onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
             <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {task.title}</Text>
               <Text style={[styles.itemText, { color: theme.colors.text }]}>Description: {task.description}</Text>
               <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
               <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
