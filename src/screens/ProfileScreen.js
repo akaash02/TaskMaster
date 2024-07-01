@@ -6,7 +6,7 @@ import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
-import NavBar from '../components/NavBar'; // Import the NavBar component
+import NavBar from '../components/NavBar';
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, setTheme, saveThemePreference } = useContext(ThemeContext);

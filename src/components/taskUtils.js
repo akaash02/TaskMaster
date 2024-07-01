@@ -12,7 +12,7 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
     tasksSnapshot.forEach(doc => {
       let task = doc.data();
       task.id = doc.id;
-      task.dueDate = task.dueDate.toDate(); // Ensure dueDate is converted to Date
+      task.dueDate = task.dueDate.toDate();
       tasks.push(task);
     });
 
@@ -72,7 +72,7 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
                 endTime: endTime.toISOString()
               });
 
-              slot.startTime = getSlotTimeInMinutes(endTime); // Update the startTime of the slot
+              slot.startTime = getSlotTimeInMinutes(endTime); 
               break;
             } else {
               console.log('End time exceeds slot end time or clashing with an event');
@@ -92,9 +92,8 @@ export async function fetchAndScheduleTasks(userId, scheduleId) {
 
 function isValidWeeklySlot(slot, dueDate) {
   let taskDate = new Date(dueDate);
-  let taskDay = taskDate.getDay(); // Get the day of the week (0-6, where 0 is Sunday)
+  let taskDay = taskDate.getDay(); 
 
-  // Calculate the day index for the slot's day of the week (0-6)
   const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let slotDayIndex = daysOfWeek.indexOf(slot.dayOfWeek.toLowerCase());
 
@@ -103,7 +102,7 @@ function isValidWeeklySlot(slot, dueDate) {
     return false;
   }
 
-  // Check if the slot's day index is less than the task's day index
+
   return slotDayIndex < taskDay;
 }
 
@@ -125,20 +124,15 @@ function getSlotTimeInMinutes(date) {
 function getSlotDate(slot, dueDate, slotTimeInMinutes) {
   let date = new Date(dueDate);
   
-  // Get the current day of the week for the task's due date
-  let currentDay = date.getDay(); // 0-6, where 0 is Sunday
+  let currentDay = date.getDay(); 
 
-  // Calculate the day index for the slot's day of the week (0-6)
   const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let slotDayIndex = daysOfWeek.indexOf(slot.dayOfWeek.toLowerCase());
 
-  // Calculate the difference in days between the slot's day and the current day
   let dayDifference = slotDayIndex - currentDay;
   
-  // Adjust the date to the correct day of the week for the timeslot
   date.setDate(date.getDate() + dayDifference);
 
-  // Set the hours and minutes for the slot time
   let hours = Math.floor(slotTimeInMinutes / 60);
   let minutes = slotTimeInMinutes % 60;
   date.setHours(hours, minutes, 0, 0);

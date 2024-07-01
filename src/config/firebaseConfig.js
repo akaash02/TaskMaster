@@ -3,14 +3,22 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import {
+  API_KEY,
+  AUTH_DOMAIN,
+  PROJECT_ID,
+  STORAGE_BUCKET,
+  MESSAGING_SENDER_ID,
+  APP_ID
+} from '@env';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD4mDNeLw-ETdbJh6JGp5COdTQZ_SVxurI",
-  authDomain: "authtest-f3cbd.firebaseapp.com",
-  projectId: "authtest-f3cbd",
-  storageBucket: "authtest-f3cbd.appspot.com",
-  messagingSenderId: "1088554199795",
-  appId: "1:1088554199795:web:5d5b8532f0d8cbbfaaa586"
+  apiKey: API_KEY,
+  authDomain: AUTH_DOMAIN,
+  projectId: PROJECT_ID,
+  storageBucket: STORAGE_BUCKET,
+  messagingSenderId: MESSAGING_SENDER_ID,
+  appId: APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Header, Text } from 'react-native-elements';
-import { ThemeContext } from '../navigation/AppNavigator'; // Ensure this path is correct
-import NavBar from '../components/NavBar'; // Import the NavBar component
+import { ThemeContext } from '../navigation/AppNavigator';
+import NavBar from '../components/NavBar';
 
 const FriendsScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);

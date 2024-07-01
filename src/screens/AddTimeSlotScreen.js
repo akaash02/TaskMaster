@@ -5,7 +5,7 @@ import { firestore } from '../config/firebaseConfig';
 import { collection, addDoc, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { auth } from '../config/firebaseConfig'; // Import Firebase Auth to get the current user
+import { auth } from '../config/firebaseConfig';
 
 const AddTimeSlotScreen = ({ navigation, route }) => {
   const { theme } = useContext(ThemeContext);

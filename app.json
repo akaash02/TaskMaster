@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "cover",
+      "resizeMode": "contain",
       "backgroundColor": "#03012E"
     },
     "ios": {
@@ -16,8 +16,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/main_logo_no_text.png",
-        "backgroundColor": "#040046f"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
       },
       "package": "com.akaash02.TaskMaster",
       "jsEngine": "hermes",
@@ -41,6 +41,16 @@
     },
     "updates": {
       "url": "https://u.expo.dev/cefd37d2-98cc-4698-ad4a-56aa561841b4"
-    }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ]
   }
 }
