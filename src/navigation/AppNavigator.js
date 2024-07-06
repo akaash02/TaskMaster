@@ -17,6 +17,7 @@ import EventScreen from '../screens/EventScreen';
 import ViewEventScreen from '../screens/ViewEventScreen';
 import TimeSlotScreen from '../screens/TimeSlotScreen';
 import AddTimeSlotScreen from '../screens/AddTimeSlotScreen';
+import ChatScreen from '../screens/ChatScreen'; // Import ChatScreen
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -70,6 +71,7 @@ function AppNavigator() {
             <Stack.Screen name="ViewEvent" component={ViewEventScreen} options={{ headerShown: false }} />
             <Stack.Screen name="TimeSlot" component={TimeSlotScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AddTimeSlot" component={AddTimeSlotScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeContext.Provider>

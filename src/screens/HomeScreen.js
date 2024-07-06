@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Card, Icon } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, getDoc, query, where,} from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import CircularDropdown from '../components/CircularDropdown';
 import { ThemeContext } from '../navigation/AppNavigator';
@@ -54,8 +54,11 @@ const HomeScreen = ({ navigation }) => {
       const fetchTasksAndEvents = (userId) => {
         const tasksRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
         const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
-
-        const unsubscribeTasks = onSnapshot(tasksRef, (querySnapshot) => {
+      
+        // Query for incomplete tasks
+        const incompleteTasksQuery = query(tasksRef, where('completed', '==', false));
+      
+        const unsubscribeTasks = onSnapshot(incompleteTasksQuery, (querySnapshot) => {
           const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTasks(tasksList);
           setLoading(false);
@@ -63,7 +66,7 @@ const HomeScreen = ({ navigation }) => {
           console.error('Error fetching tasks:', error.message);
           setLoading(false);
         });
-
+      
         const unsubscribeEvents = onSnapshot(eventsRef, (querySnapshot) => {
           const eventsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setEvents(eventsList);
@@ -72,12 +75,13 @@ const HomeScreen = ({ navigation }) => {
           console.error('Error fetching events:', error.message);
           setLoading(false);
         });
-
+      
         return () => {
           unsubscribeTasks();
           unsubscribeEvents();
         };
       };
+      
 
       if (userId) {
         fetchUserName(userId);

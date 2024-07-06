@@ -105,6 +105,7 @@ const TaskScreen = ({ navigation, route }) => {
         priority,
         duration,
         difficulty,
+        completed: false, // Add completed field with default value
         startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
         endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
       };
@@ -135,6 +136,8 @@ const TaskScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
+  
+  
   
 
   const handleDueDateConfirm = (date) => {

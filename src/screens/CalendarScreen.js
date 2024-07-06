@@ -1,99 +1,70 @@
-import React, { useState, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Header, Text, Icon } from 'react-native-elements';
+import { Text, Icon } from 'react-native-elements';
+import { auth, firestore } from '../config/firebaseConfig';
 import { Calendar } from 'react-native-calendars';
-import { firestore } from '../config/firebaseConfig';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { useFocusEffect } from '@react-navigation/native';
+import { onAuthStateChanged } from 'firebase/auth';
 import CircularDropdown from '../components/CircularDropdown';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
-import { darkTheme, lightTheme } from '../themes/ThemeIndex';
-import NavBar from '../components/NavBar';
 
-const CalendarScreen = ({ navigation, route }) => {
-  const { userId, scheduleId } = route.params;
+const CalendarScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
+  const [userId, setUserId] = useState('');
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const scheduleId = 'yourScheduleId';
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchTasksAndEvents = () => {
-        const tasksRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
-        const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
+  const currentDate = new Date();
+  const startOfWeek = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+  const endOfWeek = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 6));
+  const dates = [];
 
-        const unsubscribeTasks = onSnapshot(tasksRef, (querySnapshot) => {
-          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setTasks(tasksList);
-          setLoading(false);
-        }, (error) => {
-          console.error('Error fetching tasks:', error.message);
-          setLoading(false);
-        });
+  for (let d = new Date(startOfWeek); d <= endOfWeek; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d));
+  }
 
-        const unsubscribeEvents = onSnapshot(eventsRef, (querySnapshot) => {
-          const eventsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setEvents(eventsList);
-          setLoading(false);
-        }, (error) => {
-          console.error('Error fetching events:', error.message);
-          setLoading(false);
-        });
-
-        return () => {
-          unsubscribeTasks();
-          unsubscribeEvents();
-        };
-      };
-
-      if (userId && scheduleId) {
-        fetchTasksAndEvents();
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
       }
-    }, [userId, scheduleId])
-  );
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const renderItemsForDate = (date) => {
-    const tasksForDate = tasks.filter(
-      task => new Date(task.dueDate.toDate()).toDateString() === date.toDateString()
-    );
+  useEffect(() => {
+    if (userId) {
+      const tasksRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
+      const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
 
-    const eventsForDate = events.filter(
-      event => new Date(event.startTime.toDate()).toDateString() === date.toDateString()
-    );
+      const incompleteTasksQuery = query(tasksRef, where('completed', '==', false));
 
-    return (
-      <>
-        {tasksForDate.map(task => (
-          <TouchableOpacity 
-            key={task.id} 
-            onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
-            <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Description: {task.description}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {task.repeat ? 'Yes' : 'No'}</Text>
-              {task.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {task.repeatInterval}</Text>}
-            </View>
-          </TouchableOpacity>
-        ))}
-        {eventsForDate.map(event => (
-          <TouchableOpacity 
-            key={event.id} 
-            onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-            <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {event.title}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Location: {event.location}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>All Day: {event.allDay ? 'Yes' : 'No'}</Text>
-              <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat: {event.repeat ? 'Yes' : 'No'}</Text>
-              {event.repeat && <Text style={[styles.itemText, { color: theme.colors.text }]}>Repeat Interval: {event.repeatInterval}</Text>}
-            </View>
-          </TouchableOpacity>
-        ))}
-      </>
-    );
-  };
+      const unsubscribeTasks = onSnapshot(incompleteTasksQuery, (querySnapshot) => {
+        const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTasks(tasksList);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching tasks:', error.message);
+        setLoading(false);
+      });
+
+      const unsubscribeEvents = onSnapshot(eventsRef, (querySnapshot) => {
+        const eventsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEvents(eventsList);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching events:', error.message);
+        setLoading(false);
+      });
+
+      return () => {
+        unsubscribeTasks();
+        unsubscribeEvents();
+      };
+    }
+  }, [userId]);
 
   const handleDropdownSelect = (option) => {
     if (option.value === 'task') {
@@ -105,16 +76,10 @@ const CalendarScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Header
-        centerComponent={{ text: 'My Calendar', style: [styles.headerText, { color: theme.colors.text }] }}
-        containerStyle={styles.headerContainer}
-        placement="left"
-        statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
-      />
-      <ScrollView>
-        <View style={styles.calendarContainer}>
-          <View style={styles.calendarHeader} />
-          <Calendar
+      <Text style={[styles.headerText, { color: theme.colors.text }]}>Calendar</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.content}>
+        <Calendar
             theme={{
               backgroundColor: 'transparent',
               calendarBackground: 'transparent',
@@ -143,9 +108,11 @@ const CalendarScreen = ({ navigation, route }) => {
               renderItemsForDate(new Date(day.timestamp));
             }}
           />
-        </View>
-        <View style={styles.tasksContainer}>
-          <View style={styles.tasksHeader}>
+          {loading ? (
+            <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
+          ) : (
+            <View style={styles.tasksContainer}>
+              <View style={styles.tasksHeader}>
             <Text style={[styles.tasksHeaderText, { color: theme.colors.text }]}>My Tasks & Events</Text>
             <CircularDropdown
               icon="add"
@@ -156,18 +123,11 @@ const CalendarScreen = ({ navigation, route }) => {
               onSelect={handleDropdownSelect}
             />
           </View>
-          {loading ? (
-            <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
-          ) : (
-            <>
               {tasks.map(task => (
-                <TouchableOpacity 
-                  key={task.id} 
-                  onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
-                  <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {task.title}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Priority: {task.priority}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>{task.dueDate.toDate().toDateString()}</Text>
+                <TouchableOpacity key={task.id} onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
+                  <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {task.title || 'No title'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Priority: {task.priority || 'No priority'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Start Time: {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>End Time: {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}</Text>
                     <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
@@ -176,22 +136,19 @@ const CalendarScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ))}
               {events.map(event => (
-                <TouchableOpacity 
-                  key={event.id} 
-                  onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-                  <View style={[styles.item, { backgroundColor: theme.colors.card }]}>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Title: {event.title}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Location: {event.location}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>Start: {new Date(event.startTime.toDate()).toLocaleString()}</Text>
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>End: {new Date(event.endTime.toDate()).toLocaleString()}</Text>
+                <TouchableOpacity key={event.id} onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
+                  <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {event.title || 'No title'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Location: {event.location || 'No location'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
-            </>
+            </View>
           )}
         </View>
       </ScrollView>
-      <NavBar navigation={navigation} userId={userId} scheduleId={scheduleId} />
     </View>
   );
 };
@@ -200,25 +157,84 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerContainer: {
-    paddingTop: 40,
-    backgroundColor: 'transparent',
-    borderBottomWidth: 0,
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 50,
+    textAlign: 'left',
     fontWeight: 'bold',
+    margin: 20,
+    paddingTop: 20,
   },
-  calendarContainer: {
-    marginHorizontal: 20,
-    backgroundColor: 'transparent',
+  content: {
+    flex: 1,
+    width: '100%',
+  },
+  card: {
     borderRadius: 10,
-    overflow: 'hidden',
-    marginTop: 20,
+    padding: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '90%',
+    alignSelf: 'center',
+  },
+  dateCard: {
+    height: '15%',
   },
   tasksContainer: {
-    marginHorizontal: 20,
+    width: '90%', 
+    alignSelf: 'center', 
+  },
+  taskItem: {
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    width: '100%', 
+  },
+  taskText: {
+    fontSize: 16,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginTop: 20,
+  },
+  dateContainer: {
+    alignItems: 'center',
+  },
+  date: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  day: {
+    fontSize: 20,
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: '5%', 
+  },
+  weekDayBox: {
+    width: '13%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  weekDayText: {
+    fontSize: 16,
+  },
+  currentDayBox: {
+    borderColor: '#007AFF',
+    borderWidth: 2,
+  },
+  currentWeekDayText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   tasksHeader: {
     flexDirection: 'row',
@@ -229,19 +245,6 @@ const styles = StyleSheet.create({
   tasksHeaderText: {
     fontSize: 20,
     fontWeight: 'bold',
-  },
-  item: {
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-  },
-  itemText: {
-    fontSize: 16,
-  },
-  loadingText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });
 
