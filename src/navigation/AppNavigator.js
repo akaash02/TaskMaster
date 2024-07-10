@@ -17,7 +17,7 @@ import EventScreen from '../screens/EventScreen';
 import ViewEventScreen from '../screens/ViewEventScreen';
 import TimeSlotScreen from '../screens/TimeSlotScreen';
 import AddTimeSlotScreen from '../screens/AddTimeSlotScreen';
-import ChatScreen from '../screens/ChatScreen'; // Import ChatScreen
+import ChatScreen from '../screens/ChatScreen';
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 

@@ -2,7 +2,7 @@
 export const darkTheme = {
     dark: true,
     colors: {
-      primary: '#BB86FC',
+      primary: '#367644',
       background: '#040046',
       card: '#215084',
       text: '#EDEEEF',
@@ -14,7 +14,7 @@ export const darkTheme = {
   export const lightTheme = {
     dark: false,
     colors: {
-      primary: '#fff',
+      primary: '#56C46E',
       background: '#E8F0FE',
       card: '#99C4ED',
       text: '#1E4289',

@@ -4,8 +4,9 @@ import { Header } from 'react-native-elements';
 import { ThemeContext } from '../navigation/AppNavigator';
 import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore, auth } from '../config/firebaseConfig'; // Updated import
+import { Ionicons } from '@expo/vector-icons';
 
-const ChatScreen = ({ route }) => {
+const ChatScreen = ({ route, navigation }) => {
   const { chatId, friendName } = route.params;
   const { theme } = useContext(ThemeContext);
   const [messages, setMessages] = useState([]);
@@ -49,6 +50,11 @@ const ChatScreen = ({ route }) => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
+        leftComponent={
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        }
         centerComponent={{ text: friendName, style: [styles.headerText, { color: theme.colors.text }] }}
         containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card }]}
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
@@ -61,17 +67,20 @@ const ChatScreen = ({ route }) => {
             <Text style={[styles.messageText, { color: theme.colors.text }]}>{item.text}</Text>
           </View>
         )}
+        contentContainerStyle={styles.messagesContainer}
       />
-      <TextInput
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-        placeholder="Type a message..."
-        placeholderTextColor={theme.colors.text}
-        value={newMessage}
-        onChangeText={setNewMessage}
-      />
-      <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.primary }]}>
-        <Text style={[styles.sendButtonText, { color: theme.colors.text }]}>Send</Text>
-      </TouchableOpacity>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
+          placeholder="Type a message..."
+          placeholderTextColor={theme.colors.text}
+          value={newMessage}
+          onChangeText={setNewMessage}
+        />
+        <TouchableOpacity onPress={handleSend} style={[styles.sendButton, { backgroundColor: theme.colors.text }]}>
+          <Text style={[styles.sendButtonText, { color: theme.colors.background }]}>Send</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -82,10 +91,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     borderBottomWidth: 0,
+    justifyContent: 'space-between',
   },
   headerText: {
-    fontSize: 25,
-    textAlign: 'center',
+    fontSize: 20,
     fontWeight: 'bold',
   },
   errorText: {
@@ -94,28 +103,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+  messagesContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
   messageItem: {
     padding: 10,
-    margin: 10,
+    marginVertical: 5,
     borderRadius: 10,
   },
   messageText: {
-    fontSize: 18,
+    fontSize: 16,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
   },
   input: {
-    margin: 10,
+    flex: 1,
+    marginRight: 10,
     padding: 10,
     borderWidth: 1,
     borderRadius: 5,
   },
   sendButton: {
-    margin: 10,
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 5,
-    alignItems: 'center',
   },
   sendButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
