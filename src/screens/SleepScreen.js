@@ -1,81 +1,217 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Header } from 'react-native-elements';
-import { ThemeContext } from '../navigation/AppNavigator';
-import NavBar from '../components/NavBar';
-import { initTensorFlow, createModel, trainModel, predictQuality } from '../../tensorflowSetup';
-
-const sampleSleepData = [
-  { startTime: new Date('2023-07-01T22:00:00').getTime(), endTime: new Date('2023-07-02T06:00:00').getTime(), hoursSlept: 8, quality: 7 },
-  { startTime: new Date('2023-07-02T23:00:00').getTime(), endTime: new Date('2023-07-03T07:00:00').getTime(), hoursSlept: 8, quality: 8 },
-  { startTime: new Date('2023-07-03T21:30:00').getTime(), endTime: new Date('2023-07-04T05:30:00').getTime(), hoursSlept: 8, quality: 6 },
-  { startTime: new Date('2023-07-04T22:30:00').getTime(), endTime: new Date('2023-07-05T06:30:00').getTime(), hoursSlept: 8, quality: 7 },
-  { startTime: new Date('2023-07-05T23:00:00').getTime(), endTime: new Date('2023-07-06T07:00:00').getTime(), hoursSlept: 8, quality: 8 },
-  { startTime: new Date('2023-07-06T22:00:00').getTime(), endTime: new Date('2023-07-07T06:00:00').getTime(), hoursSlept: 8, quality: 9 },
-  { startTime: new Date('2023-07-07T21:00:00').getTime(), endTime: new Date('2023-07-08T05:00:00').getTime(), hoursSlept: 8, quality: 5 },
-];
+import { createModel, trainModel, predictSingle } from '../../tensorflowModel';
+import { prepareData } from '../../prepareData';
+import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-react-native';
+import { firestore, auth } from '../config/firebaseConfig';
+import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { ThemeContext } from 'react-native-elements';
 
 const SleepScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
-  const [predictions, setPredictions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [model, setModel] = useState(null);
+  const [optimalSchedule, setOptimalSchedule] = useState(null);
+  const [savedSchedule, setSavedSchedule] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [sleepData, setSleepData] = useState([]);
+
+  const retrieveSleepData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const sleepCollection = collection(firestore, 'users', user.uid, 'sleepData');
+        const sleepSnapshot = await getDocs(sleepCollection);
+        const sleepDataList = sleepSnapshot.docs.map(doc => {
+          const data = doc.data();
+          const startTime = data.startTime.toDate();
+          const endTime = data.endTime.toDate();
+          const hoursSlept = (endTime - startTime) / (1000 * 60 * 60);
+
+          return {
+            startTime: startTime.getHours(),
+            endTime: endTime.getHours(),
+            hoursSlept: hoursSlept,
+            sleepQuality: data.quality,
+          };
+        });
+
+        console.log('Retrieved sleep data:', sleepDataList);
+
+        // Filter out any invalid data points
+        const validSleepDataList = sleepDataList.filter(data =>
+          data.hoursSlept > 0 && !isNaN(data.sleepQuality)
+        );
+
+        setSleepData(validSleepDataList);
+
+        // Check if there are at least 7 valid data points
+        if (validSleepDataList.length < 7) {
+          setError('Insufficient data to make predictions. Please add more sleep data.');
+          setLoading(false);
+          return;
+        }
+      } else {
+        setError('No user is currently signed in.');
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const retrieveSavedSchedule = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.optimalSleepSchedule) {
+            setSavedSchedule(data.optimalSleepSchedule);
+          }
+        }
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const setupModel = async () => {
+    try {
+      setLoading(true);
+      await tf.ready();
+      const newModel = createModel();
+      setModel(newModel);
+
+      const { inputTensor, labelTensor } = prepareData(sleepData);
+      console.log('Input Tensor:', inputTensor.arraySync());
+      console.log('Label Tensor:', labelTensor.arraySync());
+
+      await trainModel(newModel, inputTensor, labelTensor);
+
+      inputTensor.dispose();
+      labelTensor.dispose();
+
+      const optimal = findOptimalSchedule(newModel);
+      setOptimalSchedule(optimal);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const findOptimalSchedule = (model) => {
+    let bestQuality = -Infinity;
+    let bestSchedule = null;
+
+    for (let startTime = 20; startTime <= 23; startTime++) {
+      for (let hoursSlept = 7; hoursSlept <= 10; hoursSlept++) { // Constrain hoursSlept
+        const endTime = (startTime + hoursSlept) % 24;
+        const input = [
+          startTime / 23,
+          endTime / 23,
+          hoursSlept / 10, // Adjust normalization
+          1 // Assume initial sleep quality is normalized
+        ];
+
+        const predictedQuality = predictSingle(model, input)[0];
+
+        if (predictedQuality > bestQuality) {
+          bestQuality = predictedQuality;
+          bestSchedule = { startTime, endTime, hoursSlept, predictedQuality };
+        }
+      }
+    }
+
+    return bestSchedule;
+  };
+
+  const saveSchedule = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user && optimalSchedule) {
+        const userDoc = doc(firestore, 'users', user.uid);
+        await updateDoc(userDoc, {
+          optimalSleepSchedule: optimalSchedule
+        });
+        alert('Optimal schedule saved successfully!');
+      } else {
+        setError('No optimal schedule to save.');
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        await initTensorFlow();
-        console.log("TensorFlow initialized");
-  
-        const data = sampleSleepData;
-  
-        console.log("Creating model...");
-        const model = createModel();
-        console.log("Model created");
-  
-        await trainModel(model, data);
-        console.log("Model trained");
-  
-        const preds = predictQuality(model, data);
-        console.log("Predictions made");
-        setPredictions(preds);
-      } catch (error) {
-        console.error('Error processing sleep data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    loadData();
+    retrieveSleepData();
+    retrieveSavedSchedule();
   }, []);
-  
-
-  if (loading) {
-    return <ActivityIndicator size="large" color={theme.colors.primary} />;
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
-        centerComponent={{ text: 'Sleep Tracker', style: [styles.headerText, { color: theme.colors.text }] }}
-        containerStyle={styles.headerContainer}
-        placement="left"
-        statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
+        leftComponent={{ icon: 'arrow-back', color: '#fff', onPress: () => navigation.navigate('Profile') }}
+        centerComponent={{ text: 'Sleep Schedule', style: [styles.headerText, { color: theme.colors.text }] }}
+        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.primary }]}
       />
-      <View style={styles.content}>
-        {predictions.length > 0 ? (
-          predictions.map((pred, index) => (
-            <Text key={index} style={[styles.predictionText, { color: theme.colors.text }]}>
-              Predicted Quality: {pred.toFixed(2)}
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('AddSleep')}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add sleep data</Text>
+      </TouchableOpacity>
+      <View style={styles.section}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Saved Optimal Sleep Schedule</Text>
+        {savedSchedule ? (
+          <View style={styles.scheduleContainer}>
+            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+              Start Time: {savedSchedule.startTime}:00
             </Text>
-          ))
+            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+              End Time: {savedSchedule.endTime}:00
+            </Text>
+            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+              Hours Slept: {savedSchedule.hoursSlept}
+            </Text>
+          </View>
         ) : (
-          <Text style={[styles.noDataText, { color: theme.colors.text }]}>No sleep data available</Text>
+          <Text style={[styles.scheduleText, { color: theme.colors.text }]}>No saved schedule found.</Text>
         )}
-        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('AddSleep')}>
-          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add Sleep Data</Text>
-        </TouchableOpacity>
       </View>
-      <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={setupModel}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Generate Model</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={saveSchedule}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Optimal Schedule</Text>
+      </TouchableOpacity>
+      <View style={styles.section}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Currently Generated Optimal Schedule</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={{ color: theme.colors.text }}>Loading model...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>Error: {error}</Text>
+          </View>
+        ) : optimalSchedule ? (
+          <View style={styles.scheduleContainer}>
+            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+              Start Time: {optimalSchedule.startTime}:00
+            </Text>
+            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+              End Time: {optimalSchedule.endTime}:00
+            </Text>
+            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+              Hours Slept: {optimalSchedule.hoursSlept}
+            </Text>
+          </View>
+        ) : (
+          <Text style={[styles.scheduleText, { color: theme.colors.text }]}>Generate the model to calculate optimal schedule...</Text>
+        )}
+      </View>
     </View>
   );
 };
@@ -85,38 +221,51 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    paddingTop: 20,
-    backgroundColor: 'transparent',
     borderBottomWidth: 0,
   },
   headerText: {
-    fontSize: 50,
+    fontSize: 24,
     fontWeight: 'bold',
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+  section: {
+    padding: 20,
   },
-  noDataText: {
-    fontSize: 18,
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
     marginBottom: 20,
   },
-  predictionText: {
+  scheduleContainer: {
+    alignItems: 'center',
+  },
+  scheduleText: {
     fontSize: 18,
     marginBottom: 10,
   },
   button: {
-    width: '80%',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 5,
     alignItems: 'center',
+    marginVertical: 10,
   },
   buttonText: {
     fontSize: 18,
     fontWeight: 'bold',
   },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  errorText: {
+    fontSize: 18,
+  },
 });
 
 export default SleepScreen;
+
