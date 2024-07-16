@@ -90,7 +90,7 @@ const ProfileScreen = ({ navigation }) => {
         <Text style={{ color: theme.colors.text}}>Please log out and log in again if dark mode is not rendering properly.</Text>
         </View>
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('Sleep')}>
-          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add sleep data</Text>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Sleep</Text>
         </TouchableOpacity>
       </View>
       <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />
@@ -135,6 +135,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 20,
+    marginBottom: 20,
   },
   bottomNav: {
     flexDirection: 'row',
