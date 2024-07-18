@@ -1,9 +1,10 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { Text, Button } from 'react-native-elements';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { firestore, auth } from '../config/firebaseConfig';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 const AddSleepScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -12,6 +13,14 @@ const AddSleepScreen = ({ navigation }) => {
   const [quality, setQuality] = useState('');
   const [isStartTimePickerVisible, setStartTimePickerVisibility] = useState(false);
   const [isEndTimePickerVisible, setEndTimePickerVisibility] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Add Sleep Data',
+      headerStyle: { backgroundColor: theme.colors.primary },
+      headerTintColor: theme.colors.text,
+    });
+  }, [navigation, theme]);
 
   const handleSaveSleep = async () => {
     const user = auth.currentUser;
@@ -47,7 +56,8 @@ const AddSleepScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.label, { color: theme.colors.text }]}>Start Time:</Text>
+      <Text h4 style={[styles.title, { color: theme.colors.text }]}>Add Sleep Data</Text>
+      
       <TouchableOpacity onPress={() => setStartTimePickerVisibility(true)}>
         <Text style={[styles.input, { color: theme.colors.text }]}>
           {startTime.toLocaleString()}
@@ -60,7 +70,6 @@ const AddSleepScreen = ({ navigation }) => {
         onCancel={() => setStartTimePickerVisibility(false)}
       />
 
-      <Text style={[styles.label, { color: theme.colors.text }]}>End Time:</Text>
       <TouchableOpacity onPress={() => setEndTimePickerVisibility(true)}>
         <Text style={[styles.input, { color: theme.colors.text }]}>
           {endTime.toLocaleString()}
@@ -73,15 +82,23 @@ const AddSleepScreen = ({ navigation }) => {
         onCancel={() => setEndTimePickerVisibility(false)}
       />
 
-      <Text style={[styles.label, { color: theme.colors.text }]}>Quality (1-10):</Text>
       <TextInput
         style={[styles.input, { backgroundColor: theme.colors.card, color: theme.colors.text }]}
         keyboardType="numeric"
+        placeholder="Quality (1-10)"
         value={quality}
         onChangeText={setQuality}
       />
 
-      <Button title="Save Sleep Data" onPress={handleSaveSleep} />
+      <Button
+        title="Save Sleep Data"
+        onPress={handleSaveSleep}
+        buttonStyle={[styles.button, { backgroundColor: theme.colors.card }]}
+        titleStyle={{ color: theme.colors.text }}
+      />
+      <TouchableOpacity onPress={() => navigation.navigate('Sleep')} style={[styles.addButton, { backgroundColor: theme.colors.text }]}>
+      <Text style={[styles.buttonText, { color: theme.colors.background }]}>Back</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -89,18 +106,31 @@ const AddSleepScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
-  label: {
-    fontSize: 18,
-    marginVertical: 10,
+  title: {
+    textAlign: 'center',
+    marginVertical: 16,
   },
   input: {
-    height: 40,
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 20,
+    padding: 12,
+    marginVertical: 8,
+    borderRadius: 4,
+  },
+  button: {
+    padding: 16,
+    borderRadius: 4,
+    marginVertical: 8,
+  },
+  addButton: {
+    padding: 16,
+    alignItems: 'center',
+    borderRadius: 4,
+    marginVertical: 8,
+  },
+  buttonText: {
+    fontWeight: 'bold',
   },
 });
 

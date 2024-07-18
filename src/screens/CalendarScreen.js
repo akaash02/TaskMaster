@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Icon } from 'react-native-elements';
+import { Text, Icon, Header } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { Calendar } from 'react-native-calendars';
 import { onAuthStateChanged } from 'firebase/auth';
 import CircularDropdown from '../components/CircularDropdown';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
+import NavBar from '../components/NavBar';
 
 const CalendarScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -76,7 +77,12 @@ const CalendarScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.headerText, { color: theme.colors.text }]}>Calendar</Text>
+      <Header
+        centerComponent={{ text: 'Calendar', style: [styles.headerText, { color: theme.colors.text }] }}
+        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card }]}
+        placement="left"
+        statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
+      />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
         <Calendar
@@ -125,30 +131,37 @@ const CalendarScreen = ({ navigation }) => {
           </View>
               {tasks.map(task => (
                 <TouchableOpacity key={task.id} onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
-                  <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {task.title || 'No title'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Priority: {task.priority || 'No priority'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Start Time: {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>End Time: {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Difficulty: {task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
+                <View style={[styles.taskItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+                  <Text style={[styles.taskTitle, { color: theme.colors.text }]}>{task.title || 'No title'}</Text>
+                  <View style={styles.taskDetailsContainer}>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}> {task.priority ? (task.priority === 1 ? 'Low Priority' : task.priority === 2 ? 'Medium Priority' : 'High Priority') : 'No priority'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>
+                      {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'} - {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}
+                    </Text>
                   </View>
-                </TouchableOpacity>
+                  <Text style={[styles.taskText, { color: theme.colors.text }]}> {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
+                  <Text style={[styles.taskText, { color: theme.colors.text }]}> {task.difficulty ? `${task.difficulty}/5 difficulty` : 'No difficulty'}</Text>
+                </View>
+              </TouchableOpacity>
               ))}
               {events.map(event => (
                 <TouchableOpacity key={event.id} onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-                  <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {event.title || 'No title'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Location: {event.location || 'No location'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
+                <View style={[styles.taskItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+                  <Text style={[styles.taskTitle, { color: theme.colors.text }]}>{event.title || 'No title'}</Text>
+                  <View style={styles.eventDetailsContainer}>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>{event.location || 'No location'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>
+                      {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'} - {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}
+                    </Text>
                   </View>
-                </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
       </ScrollView>
+      <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />
     </View>
   );
 };
@@ -161,19 +174,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 20,
   },
-  headerText: {
-    fontSize: 50,
-    textAlign: 'left',
-    fontWeight: 'bold',
-    margin: 20,
+  headerContainer: {
     paddingTop: 20,
+    borderBottomWidth: 0,
+  },
+  headerText: {
+    fontSize: 45,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
     width: '100%',
   },
   card: {
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     alignItems: 'center',
@@ -185,18 +200,30 @@ const styles = StyleSheet.create({
     height: '15%',
   },
   tasksContainer: {
-    width: '90%', 
-    alignSelf: 'center', 
+    width: '90%',
+    alignSelf: 'center',
   },
   taskItem: {
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 20,
     marginTop: 10,
-    width: '100%', 
+    width: '100%',
+    borderWidth: 1.5,
+  },
+  taskTitle: {
+    fontSize: 27,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
   },
   taskText: {
-    fontSize: 16,
+    fontSize: 18,
   },
+  eventDetailsContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-around',
+    marginLeft: 5,
+  }, 
   loadingText: {
     fontSize: 18,
     fontWeight: 'bold',

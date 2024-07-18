@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Card, Icon } from 'react-native-elements';
+import { Text, Card, Icon, Header } from 'react-native-elements';
 import { auth, firestore } from '../config/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, onSnapshot, getDoc, query, where,} from 'firebase/firestore';
@@ -100,10 +100,12 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.headerContainer, { backgroundColor: theme.colors.card }]}>
       <Text style={[styles.headerText, { color: theme.colors.text }]}>Hello {userName}!</Text>
+      </View> 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <View style={[styles.card, styles.dateCard, { backgroundColor: theme.colors.card }]}>
+          <View style={[styles.card, styles.dateCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
             <View style={styles.weekDaysContainer}>
               {dates.map((date, index) => (
                 <TouchableOpacity key={index} style={[
@@ -130,12 +132,12 @@ const HomeScreen = ({ navigation }) => {
               onSelect={handleDropdownSelect}
             />
             <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
-              <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+              <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
                 <Icon name="people" type="material" size={27} color={theme.colors.text} />
               </Card>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-              <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+              <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
                 <Icon name="person" type="material" size={27} color={theme.colors.text} />
               </Card>
             </TouchableOpacity>
@@ -149,25 +151,33 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.tasksContainer}>
               {tasks.map(task => (
                 <TouchableOpacity key={task.id} onPress={() => navigation.navigate('ViewTask', { userId, scheduleId, taskId: task.id })}>
-                  <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {task.title || 'No title'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Priority: {task.priority || 'No priority'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Start Time: {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>End Time: {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Duration: {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Difficulty: {task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
+                <View style={[styles.taskItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+                  <Text style={[styles.taskTitle, { color: theme.colors.text }]}>{task.title || 'No title'}</Text>
+                  <View style={styles.taskDetailsContainer}>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}> {task.priority ? (task.priority === 1 ? 'Low Priority' : task.priority === 2 ? 'Medium Priority' : 'High Priority') : 'No priority'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>
+                      {task.startTime ? new Date(task.startTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No start time'} - {task.endTime ? new Date(task.endTime).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No end time'}
+                    </Text>
                   </View>
-                </TouchableOpacity>
+                  <Text style={[styles.taskText, { color: theme.colors.text }]}> {task.duration ? `${task.duration} hours` : 'No duration'}</Text>
+                  <Text style={[styles.taskText, { color: theme.colors.text }]}> {task.difficulty ? `${task.difficulty}/5 difficulty` : 'No difficulty'}</Text>
+                </View>
+              </TouchableOpacity>
+              
               ))}
               {events.map(event => (
                 <TouchableOpacity key={event.id} onPress={() => navigation.navigate('ViewEvent', { userId, scheduleId, eventId: event.id })}>
-                  <View style={[styles.taskItem, { backgroundColor: theme.colors.card }]}>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Title: {event.title || 'No title'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Location: {event.location || 'No location'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>Start: {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'}</Text>
-                    <Text style={[styles.taskText, { color: theme.colors.text }]}>End: {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}</Text>
+                <View style={[styles.taskItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+                  <Text style={[styles.taskTitle, { color: theme.colors.text }]}>{event.title || 'No title'}</Text>
+                  <View style={styles.eventDetailsContainer}>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>{event.location || 'No location'}</Text>
+                    <Text style={[styles.taskText, { color: theme.colors.text }]}>
+                      {event.startTime ? new Date(event.startTime.toDate()).toLocaleString() : 'No start time'} - {event.endTime ? new Date(event.endTime.toDate()).toLocaleString() : 'No end time'}
+                    </Text>
                   </View>
-                </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+              
               ))}
             </View>
           )}
@@ -184,6 +194,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 20,
+    marginTop: 20,
   },
   headerText: {
     fontSize: 50,
@@ -204,6 +215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '90%',
     alignSelf: 'center',
+    borderWidth: 1.5,
   },
   dateCard: {
     height: '15%',
@@ -221,18 +233,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tasksContainer: {
-    width: '90%', 
-    alignSelf: 'center', 
+    width: '90%',
+    alignSelf: 'center',
   },
   taskItem: {
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 20,
     marginTop: 10,
-    width: '100%', 
+    width: '100%',
+    borderWidth: 1.5,
+  },
+  taskTitle: {
+    fontSize: 27,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
   },
   taskText: {
-    fontSize: 16,
+    fontSize: 18,
   },
+  eventDetailsContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-around',
+    marginLeft: 5,
+  },  
   loadingText: {
     fontSize: 18,
     fontWeight: 'bold',

@@ -101,35 +101,35 @@ const ViewTaskScreen = ({ route, navigation }) => {
         <Text style={[styles.title, { color: theme.colors.text }]}>{task.title}</Text>
       </View>
       <Text style={[styles.header, { color: theme.colors.text }]}>Duration</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{task.duration ? `${task.duration} hours` : 'No duration'}</Text>
       </Card>
       <Text style={[styles.header, { color: theme.colors.text }]}>Difficulty</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{task.difficulty ? `${task.difficulty}/5` : 'No difficulty'}</Text>
       </Card>
       <Text style={[styles.header, { color: theme.colors.text }]}>Priority</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{task.priority || 'No priority'}</Text>
       </Card>
       {task.repeat && (
         <>
           <Text style={[styles.header, { color: theme.colors.text }]}>Repeat Interval</Text>
-          <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+          <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
             <Text style={[styles.text, { color: theme.colors.text }]}>{task.repeatInterval || 'No interval'}</Text>
           </Card>
         </>
       )}
       <Text style={[styles.header, { color: theme.colors.text }]}>Deadline</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatDate(task.dueDate)}</Text>
       </Card>
       <Text style={[styles.header, { color: theme.colors.text }]}>Start Time</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatTime(task.startTime)}</Text>
       </Card>
       <Text style={[styles.header, { color: theme.colors.text }]}>End Time</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatTime(task.endTime)}</Text>
       </Card>
       <View style={styles.buttons}>
@@ -157,10 +157,12 @@ const styles = StyleSheet.create({
     fontSize: 50,
     textAlign: 'left',
     fontWeight: 'bold',
+    marginLeft: '3%',
   },
   header: {
     fontSize: 20,
     textAlign: 'left',
+    marginLeft: '3.5%',
   },
   card: {
     borderRadius: 5,

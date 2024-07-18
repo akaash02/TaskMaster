@@ -6,7 +6,7 @@ import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { ThemeContext } from '../navigation/AppNavigator';
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
-import NavBar from '../components/NavBar'; // Import the NavBar component
+import NavBar from '../components/NavBar';
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, setTheme, saveThemePreference } = useContext(ThemeContext);
@@ -61,9 +61,9 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Header
+     <Header
         centerComponent={{ text: 'My Profile', style: [styles.headerText, { color: theme.colors.text }] }}
-        containerStyle={styles.headerContainer}
+        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card }]}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
@@ -104,11 +104,11 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingTop: 20,
-    backgroundColor: 'transparent',
     borderBottomWidth: 0,
   },
   headerText: {
-    fontSize: 50,
+    fontSize: 45,
+    textAlign: 'center',
     fontWeight: 'bold',
   },
   content: {
