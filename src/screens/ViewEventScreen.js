@@ -94,15 +94,15 @@ const ViewEventScreen = ({ navigation, route }) => {
         <Text style={[styles.title, { color: theme.colors.text }]}>{event.title}</Text>
       </View>
       <Text style={[styles.header, { color: theme.colors.text }]}>Location</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{event.location}</Text>
       </Card>
       <Text style={[styles.header, { color: theme.colors.text }]}>Start Time</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatDateTime(event.startTime)}</Text>
       </Card>
-      <Text style={[styles.header, { color: theme.colors.text }]}>End Time</Text>
-      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card }]}>
+      <Text style={[styles.header, { color: theme.colors.text, borderColor: theme.colors.text }]}>End Time</Text>
+      <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatDateTime(event.endTime)}</Text>
       </Card>
       <View style={styles.buttons}>
@@ -128,10 +128,12 @@ const styles = StyleSheet.create({
     fontSize: 50,
     textAlign: 'left',
     fontWeight: 'bold',
+    marginLeft: '3%',
   },
   header: {
     fontSize: 20,
     textAlign: 'left',
+    marginLeft: '3.5%',
   },
   card: {
     borderRadius: 5,

@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Header } from 'react-native-elements';
+import { Header, Card } from 'react-native-elements';
 import { createModel, trainModel, predictSingle } from '../../tensorflowModel';
 import { prepareData } from '../../prepareData';
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-react-native';
 import { firestore, auth } from '../config/firebaseConfig';
 import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
-import { ThemeContext } from 'react-native-elements';
+import { ThemeContext } from '../navigation/AppNavigator';
+import { darkTheme, lightTheme } from '../themes/ThemeIndex';
+import NavBar from '../components/NavBar';
 
 const SleepScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -154,39 +156,40 @@ const SleepScreen = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
-        leftComponent={{ icon: 'arrow-back', color: '#fff', onPress: () => navigation.navigate('Profile') }}
-        centerComponent={{ text: 'Sleep Schedule', style: [styles.headerText, { color: theme.colors.text }] }}
-        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.primary }]}
+        centerComponent={{ text: 'Sleep', style: [styles.headerText, { color: theme.colors.text }] }}
+        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}
+        placement="left"
+        statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('AddSleep')}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={() => navigation.navigate('AddSleep')}>
         <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add sleep data</Text>
       </TouchableOpacity>
-      <View style={styles.section}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Saved Optimal Sleep Schedule</Text>
+
+      {/* Saved Optimal Sleep Schedule Card */}
+      <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+        <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Saved Optimal Sleep Schedule</Card.Title>
         {savedSchedule ? (
-          <View style={styles.scheduleContainer}>
-            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+          <>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>
               Start Time: {savedSchedule.startTime}:00
             </Text>
-            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>
               End Time: {savedSchedule.endTime}:00
             </Text>
-            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>
               Hours Slept: {savedSchedule.hoursSlept}
             </Text>
-          </View>
+          </>
         ) : (
-          <Text style={[styles.scheduleText, { color: theme.colors.text }]}>No saved schedule found.</Text>
+          <Text style={[styles.cardText, { color: theme.colors.text }]}>No saved schedule found.</Text>
         )}
-      </View>
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={setupModel}>
+      </Card>
+
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={setupModel}>
         <Text style={[styles.buttonText, { color: theme.colors.text }]}>Generate Model</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={saveSchedule}>
-        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Optimal Schedule</Text>
-      </TouchableOpacity>
-      <View style={styles.section}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Currently Generated Optimal Schedule</Text>
+      <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+        <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Currently Generated Optimal Schedule</Card.Title>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -197,21 +200,26 @@ const SleepScreen = ({ navigation }) => {
             <Text style={[styles.errorText, { color: theme.colors.error }]}>Error: {error}</Text>
           </View>
         ) : optimalSchedule ? (
-          <View style={styles.scheduleContainer}>
-            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+          <>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>
               Start Time: {optimalSchedule.startTime}:00
             </Text>
-            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>
               End Time: {optimalSchedule.endTime}:00
             </Text>
-            <Text style={[styles.scheduleText, { color: theme.colors.text }]}>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>
               Hours Slept: {optimalSchedule.hoursSlept}
             </Text>
-          </View>
+          </>
         ) : (
-          <Text style={[styles.scheduleText, { color: theme.colors.text }]}>Generate the model to calculate optimal schedule...</Text>
+          <Text style={[styles.cardText, { color: theme.colors.text }]}>Generate the model to calculate optimal schedule...</Text>
         )}
-      </View>
+      </Card>
+
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, marginBottom: "33%" }]} onPress={saveSchedule}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Optimal Schedule</Text>
+      </TouchableOpacity>
+      <NavBar navigation={navigation} userId={auth.currentUser.uid} scheduleId={'yourScheduleId'} />
     </View>
   );
 };
@@ -224,48 +232,57 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 45,
+    textAlign: 'center',
     fontWeight: 'bold',
-  },
-  section: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  scheduleContainer: {
-    alignItems: 'center',
-  },
-  scheduleText: {
-    fontSize: 18,
-    marginBottom: 10,
   },
   button: {
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
     marginVertical: 10,
+    width: "90%",
+    marginLeft: 17,
+    borderWidth: 1.5,
+
   },
   buttonText: {
     fontSize: 18,
+  },
+  cardContainer: {
+    marginHorizontal: 10,
+    marginBottom: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    width: "90%",
+    marginLeft: 17,
+    borderWidth: 1.5,
+  },
+  cardTitle: {
+    fontSize: 25,
     fontWeight: 'bold',
+  },
+  cardText: {
+    fontSize: 18,
+    marginBottom: 10,
   },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    padding: 20,
   },
   errorContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    padding: 20,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 16,
   },
 });
 
 export default SleepScreen;
-
