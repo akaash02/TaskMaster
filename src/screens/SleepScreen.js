@@ -10,6 +10,9 @@ import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore'
 import { ThemeContext } from '../navigation/AppNavigator';
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import NavBar from '../components/NavBar';
+import { GoogleGenerativeAI } from "@google/generative-ai";  // Import the GoogleGenerativeAI package
+import { G_API_KEY } from '@env';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const SleepScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
@@ -19,6 +22,8 @@ const SleepScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sleepData, setSleepData] = useState([]);
+  const [geminiFeedback, setGeminiFeedback] = useState(null);
+  const [inputSchedule, setInputSchedule] = useState(null);
 
   const retrieveSleepData = async () => {
     try {
@@ -82,6 +87,7 @@ const SleepScreen = ({ navigation }) => {
 
   const setupModel = async () => {
     try {
+      console.log('Setting up model...');
       setLoading(true);
       await tf.ready();
       const newModel = createModel();
@@ -98,10 +104,17 @@ const SleepScreen = ({ navigation }) => {
 
       const optimal = findOptimalSchedule(newModel);
       setOptimalSchedule(optimal);
+
+      console.log('Optimal schedule generated:', optimal);
+
+      // Set input schedule for Gemini feedback
+      setInputSchedule(optimal);
     } catch (err) {
+      console.error('Error setting up model:', err);
       setError(err.message);
     } finally {
       setLoading(false);
+      console.log('Model setup complete.');
     }
   };
 
@@ -131,6 +144,30 @@ const SleepScreen = ({ navigation }) => {
     return bestSchedule;
   };
 
+  const getGeminiFeedback = async () => {
+    if (!inputSchedule) {
+      setError('No schedule available for feedback.');
+      return;
+    }
+  
+    try {
+      console.log('Attempting to get Gemini feedback for schedule:', inputSchedule);
+      const genAI = new GoogleGenerativeAI(process.env.G_API_KEY);
+      const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  
+      const prompt = `Predict sleep quality based on the following schedule: Start Time: ${inputSchedule.startTime}, End Time: ${inputSchedule.endTime}, Hours Slept: ${inputSchedule.hoursSlept}`;
+  
+      const response = await geminiModel.generateContent(prompt);
+  
+      console.log('Gemini API response:', response.response.text());
+      setGeminiFeedback(response.response.text());
+    } catch (err) {
+      console.error('Failed to get Gemini feedback:', err);
+      setError('Failed to get Gemini feedback');
+    }
+  };
+  
+
   const saveSchedule = async () => {
     try {
       const user = auth.currentUser;
@@ -154,7 +191,7 @@ const SleepScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
         centerComponent={{ text: 'Sleep', style: [styles.headerText, { color: theme.colors.text }] }}
         containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}
@@ -165,7 +202,6 @@ const SleepScreen = ({ navigation }) => {
         <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add sleep data</Text>
       </TouchableOpacity>
 
-      {/* Saved Optimal Sleep Schedule Card */}
       <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Saved Optimal Sleep Schedule</Card.Title>
         {savedSchedule ? (
@@ -188,18 +224,10 @@ const SleepScreen = ({ navigation }) => {
       <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={setupModel}>
         <Text style={[styles.buttonText, { color: theme.colors.text }]}>Generate Model</Text>
       </TouchableOpacity>
+
       <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Currently Generated Optimal Schedule</Card.Title>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={{ color: theme.colors.text }}>Loading model...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={[styles.errorText, { color: theme.colors.error }]}>Error: {error}</Text>
-          </View>
-        ) : optimalSchedule ? (
+        {optimalSchedule ? (
           <>
             <Text style={[styles.cardText, { color: theme.colors.text }]}>
               Start Time: {optimalSchedule.startTime}:00
@@ -212,76 +240,84 @@ const SleepScreen = ({ navigation }) => {
             </Text>
           </>
         ) : (
-          <Text style={[styles.cardText, { color: theme.colors.text }]}>Generate the model to calculate optimal schedule...</Text>
+          <Text style={[styles.cardText, { color: theme.colors.text }]}>No optimal schedule generated yet.</Text>
         )}
       </Card>
 
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, marginBottom: "33%" }]} onPress={saveSchedule}>
-        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Optimal Schedule</Text>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={saveSchedule}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Schedule</Text>
       </TouchableOpacity>
-      <NavBar navigation={navigation} userId={auth.currentUser.uid} scheduleId={'yourScheduleId'} />
-    </View>
+
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={getGeminiFeedback}>
+        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Get Gemini Feedback</Text>
+      </TouchableOpacity>
+
+      {geminiFeedback && (
+        <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+          <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Gemini Feedback</Card.Title>
+          <Text style={[styles.cardText, { color: theme.colors.text }]}>{geminiFeedback}</Text>
+        </Card>
+      )}
+
+      {loading && (
+        <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
+      )}
+
+      {error && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
+      )}
+
+      <NavBar navigation={navigation} />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 60,
   },
   headerContainer: {
-    borderBottomWidth: 0,
+    borderBottomWidth: 1,
   },
   headerText: {
-    fontSize: 45,
-    textAlign: 'center',
+    fontSize: 24,
     fontWeight: 'bold',
   },
   button: {
-    padding: 15,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
     alignItems: 'center',
     marginVertical: 10,
-    width: "90%",
-    marginLeft: 17,
-    borderWidth: 1.5,
-
+    alignSelf: 'center',
+    width: '80%',
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   cardContainer: {
-    marginHorizontal: 10,
-    marginBottom: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    width: "90%",
-    marginLeft: 17,
-    borderWidth: 1.5,
+    borderWidth: 1,
+    borderRadius: 5,
+    marginVertical: 10,
   },
   cardTitle: {
-    fontSize: 25,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   cardText: {
-    fontSize: 18,
-    marginBottom: 10,
+    fontSize: 16,
+    marginVertical: 5,
   },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+  loader: {
+    marginVertical: 20,
   },
   errorText: {
     fontSize: 16,
+    marginVertical: 10,
+    textAlign: 'center',
   },
 });
 
