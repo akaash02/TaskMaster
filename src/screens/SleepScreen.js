@@ -108,7 +108,7 @@ const SleepScreen = ({ navigation }) => {
       console.log('Optimal schedule generated:', optimal);
 
       // Set input schedule for Gemini feedback
-      setInputSchedule(optimal);
+      setInputSchedule(savedSchedule);
     } catch (err) {
       console.error('Error setting up model:', err);
       setError(err.message);
@@ -145,17 +145,17 @@ const SleepScreen = ({ navigation }) => {
   };
 
   const getGeminiFeedback = async () => {
-    if (!inputSchedule) {
-      setError('No schedule available for feedback.');
+    if (!sleepData || sleepData.length === 0) {
+      setError('No sleep data available for feedback.');
       return;
     }
   
     try {
-      console.log('Attempting to get Gemini feedback for schedule:', inputSchedule);
-      const genAI = new GoogleGenerativeAI(process.env.G_API_KEY);
+      console.log('Attempting to get Gemini feedback for sleep data:', sleepData);
+      const genAI = new GoogleGenerativeAI(G_API_KEY);
       const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   
-      const prompt = `Predict sleep quality based on the following schedule: Start Time: ${inputSchedule.startTime}, End Time: ${inputSchedule.endTime}, Hours Slept: ${inputSchedule.hoursSlept}`;
+      const prompt = `Provide advice to improve sleeping habits based on the following sleep data: ${JSON.stringify(sleepData)}`;
   
       const response = await geminiModel.generateContent(prompt);
   
@@ -166,7 +166,6 @@ const SleepScreen = ({ navigation }) => {
       setError('Failed to get Gemini feedback');
     }
   };
-  
 
   const saveSchedule = async () => {
     try {
@@ -191,117 +190,111 @@ const SleepScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
         centerComponent={{ text: 'Sleep', style: [styles.headerText, { color: theme.colors.text }] }}
-        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}
+        containerStyle={[styles.headerContainer, { backgroundColor: theme.colors.card }]}
         placement="left"
         statusBarProps={{ translucent: true, backgroundColor: 'transparent' }}
       />
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={() => navigation.navigate('AddSleep')}>
-        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add sleep data</Text>
-      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={() => navigation.navigate('AddSleep')}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Add sleep data</Text>
+        </TouchableOpacity>
 
-      <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
-        <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Saved Optimal Sleep Schedule</Card.Title>
-        {savedSchedule ? (
-          <>
-            <Text style={[styles.cardText, { color: theme.colors.text }]}>
-              Start Time: {savedSchedule.startTime}:00
-            </Text>
-            <Text style={[styles.cardText, { color: theme.colors.text }]}>
-              End Time: {savedSchedule.endTime}:00
-            </Text>
-            <Text style={[styles.cardText, { color: theme.colors.text }]}>
-              Hours Slept: {savedSchedule.hoursSlept}
-            </Text>
-          </>
-        ) : (
-          <Text style={[styles.cardText, { color: theme.colors.text }]}>No saved schedule found.</Text>
-        )}
-      </Card>
-
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={setupModel}>
-        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Generate Model</Text>
-      </TouchableOpacity>
-
-      <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
-        <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Currently Generated Optimal Schedule</Card.Title>
-        {optimalSchedule ? (
-          <>
-            <Text style={[styles.cardText, { color: theme.colors.text }]}>
-              Start Time: {optimalSchedule.startTime}:00
-            </Text>
-            <Text style={[styles.cardText, { color: theme.colors.text }]}>
-              End Time: {optimalSchedule.endTime}:00
-            </Text>
-            <Text style={[styles.cardText, { color: theme.colors.text }]}>
-              Hours Slept: {optimalSchedule.hoursSlept}
-            </Text>
-          </>
-        ) : (
-          <Text style={[styles.cardText, { color: theme.colors.text }]}>No optimal schedule generated yet.</Text>
-        )}
-      </Card>
-
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={saveSchedule}>
-        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Schedule</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={getGeminiFeedback}>
-        <Text style={[styles.buttonText, { color: theme.colors.text }]}>Get Gemini Feedback</Text>
-      </TouchableOpacity>
-
-      {geminiFeedback && (
         <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
-          <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Gemini Feedback</Card.Title>
-          <Text style={[styles.cardText, { color: theme.colors.text }]}>{geminiFeedback}</Text>
+          <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Saved Optimal Sleep Schedule</Card.Title>
+          {savedSchedule ? (
+            <>
+              <Text style={[styles.cardText, { color: theme.colors.text }]}>
+                Start Time: {savedSchedule.startTime}:00
+              </Text>
+              <Text style={[styles.cardText, { color: theme.colors.text }]}>
+                End Time: {savedSchedule.endTime}:00
+              </Text>
+              <Text style={[styles.cardText, { color: theme.colors.text }]}>
+                Hours Slept: {savedSchedule.hoursSlept}
+              </Text>
+            </>
+          ) : (
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>No saved schedule found.</Text>
+          )}
         </Card>
-      )}
 
-      {loading && (
-        <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
-      )}
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={setupModel}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Generate Model</Text>
+        </TouchableOpacity>
 
-      {error && (
-        <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
-      )}
+        <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+          <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Optimal Sleep Schedule</Card.Title>
+          {optimalSchedule ? (
+            <>
+              <Text style={[styles.cardText, { color: theme.colors.text }]}>
+                Start Time: {optimalSchedule.startTime}:00
+              </Text>
+              <Text style={[styles.cardText, { color: theme.colors.text }]}>
+                End Time: {optimalSchedule.endTime}:00
+              </Text>
+            </>
+          ) : (
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>No optimal schedule generated.</Text>
+          )}
+        </Card>
 
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={saveSchedule}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Save Schedule</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]} onPress={getGeminiFeedback}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Get Gemini Feedback</Text>
+        </TouchableOpacity>
+
+        {geminiFeedback && (
+          <Card containerStyle={[styles.cardContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
+            <Card.Title style={[styles.cardTitle, { color: theme.colors.text }]}>Gemini Feedback</Card.Title>
+            <Text style={[styles.cardText, { color: theme.colors.text }]}>{geminiFeedback}</Text>
+          </Card>
+        )}
+
+        {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
+        {error && <Text style={[styles.errorText, { color: theme.colors.notification }]}>{error}</Text>}
+      </ScrollView>
       <NavBar navigation={navigation} />
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
   },
   headerContainer: {
-    borderBottomWidth: 1,
+    paddingTop: 20,
+    borderBottomWidth: 0,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 45,
+    textAlign: 'center',
     fontWeight: 'bold',
   },
+  scrollContainer: {
+    paddingVertical: 20,
+  },
   button: {
+    padding: 10,
     borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
     borderRadius: 5,
+    margin: 10,
     alignItems: 'center',
-    marginVertical: 10,
-    alignSelf: 'center',
-    width: '80%',
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   cardContainer: {
     borderWidth: 1,
     borderRadius: 5,
-    marginVertical: 10,
+    margin: 10,
   },
   cardTitle: {
     fontSize: 20,
@@ -309,15 +302,12 @@ const styles = StyleSheet.create({
   },
   cardText: {
     fontSize: 16,
-    marginVertical: 5,
-  },
-  loader: {
-    marginVertical: 20,
+    marginBottom: 5,
   },
   errorText: {
     fontSize: 16,
-    marginVertical: 10,
     textAlign: 'center',
+    margin: 10,
   },
 });
 
