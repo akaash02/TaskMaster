@@ -64,6 +64,7 @@ const TaskScreen = ({ navigation, route }) => {
       priority,
       duration,
       difficulty,
+      isComplete: false, // Set isComplete to false by default
       startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
       endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
     };
@@ -105,7 +106,7 @@ const TaskScreen = ({ navigation, route }) => {
         priority,
         duration,
         difficulty,
-        completed: false, // Add completed field with default value
+        isComplete: false, // Set isComplete to false by default
         startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
         endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
       };
@@ -136,9 +137,6 @@ const TaskScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
-  
-  
-  
 
   const handleDueDateConfirm = (date) => {
     setDueDate(date);
@@ -222,7 +220,9 @@ const TaskScreen = ({ navigation, route }) => {
       <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.text }]}>
         <Text style={[styles.buttonText, { color: theme.colors.background }]}>Home</Text>
       </TouchableOpacity>
-      <Text style={[styles.offlineText, { color: theme.colors.text }]}>If offline just click save once and press home</Text>
+      <Text style={[styles.offlineText, { color: theme.colors.text }]}>
+        Note: Tasks will be saved locally if offline and synced once connected to the internet.
+      </Text>
     </ScrollView>
   );
 };
@@ -230,51 +230,53 @@ const TaskScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
   title: {
-    textAlign: 'center',
-    marginVertical: 16,
+    marginBottom: 20,
   },
   input: {
     height: 40,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    marginVertical: 8,
+    marginBottom: 20,
+    paddingHorizontal: 10,
   },
   priorityContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    marginRight: 10,
   },
   priorityButton: {
-    padding: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 15,
     borderWidth: 1,
-    borderRadius: 4,
+    borderColor: 'black',
+    borderRadius: 5,
+    marginRight: 10,
   },
   priorityButtonText: {
-    fontSize: 16,
+    color: 'black',
   },
   button: {
-    padding: 12,
-    borderRadius: 4,
+    height: 50,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 8,
+    borderRadius: 5,
+    marginBottom: 10,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   offlineText: {
-    textAlign: 'center',
-    marginTop: 16,
+    marginTop: 10,
+    fontStyle: 'italic',
   },
   errorText: {
     color: 'red',
-    textAlign: 'center',
-    marginTop: 16,
   },
 });
 
