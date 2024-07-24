@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from
 import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { firestore } from '../config/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { CommonActions } from '@react-navigation/native';
@@ -64,6 +64,7 @@ const TaskScreen = ({ navigation, route }) => {
       priority,
       duration,
       difficulty,
+      isComplete: false, // Set isComplete to false by default
       startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
       endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
     };
@@ -105,7 +106,7 @@ const TaskScreen = ({ navigation, route }) => {
         priority,
         duration,
         difficulty,
-        completed: false, // Add completed field with default value
+        isComplete: false, // Set isComplete to false by default
         startTime: '2024-01-01T00:00:00.000Z', // Arbitrary start time
         endTime: '2024-01-01T01:00:00.000Z', // Arbitrary end time
       };
@@ -117,6 +118,25 @@ const TaskScreen = ({ navigation, route }) => {
         const tasksCollectionRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
         await addDoc(tasksCollectionRef, taskData);
         console.log('Task saved to firestore:', taskData);
+        
+        // Increment tasksTotal in taskAnalytics for the current month
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const taskAnalyticsRef = doc(firestore, 'users', userId, 'analytics', 'analyticsData', 'taskAnalytics', currentMonth);
+        const taskAnalyticsSnap = await getDoc(taskAnalyticsRef);
+
+        if (taskAnalyticsSnap.exists()) {
+          const taskAnalyticsData = taskAnalyticsSnap.data();
+          await updateDoc(taskAnalyticsRef, {
+            tasksTotal: (taskAnalyticsData.tasksTotal || 0) + 1,
+          });
+        } else {
+          await setDoc(taskAnalyticsRef, {
+            tasksCompleted: 0,
+            tasksDeleted: 0,
+            tasksTotal: 1,
+            hoursSpent: 0,
+          });
+        }
         
         // Call fetchAndScheduleTasks to schedule tasks after saving
         console.log('Calling fetchAndScheduleTasks');
@@ -136,9 +156,6 @@ const TaskScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
-  
-  
-  
 
   const handleDueDateConfirm = (date) => {
     setDueDate(date);
@@ -151,7 +168,7 @@ const TaskScreen = ({ navigation, route }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text h4 style={[styles.title, { color: theme.colors.text }]}>Create Task</Text>
+      <Text h1 style={[styles.title, { color: theme.colors.text }]}>Create Task</Text>
       <TextInput
         style={[styles.input, { borderColor: theme.colors.text, color: theme.colors.text }]}
         placeholder="Title"
@@ -216,13 +233,12 @@ const TaskScreen = ({ navigation, route }) => {
           <Text style={[styles.priorityButtonText, priority === 3 && { color: theme.colors.background }]}>High</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.card }]}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleSave}>
         <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save Task</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.text }]}>
         <Text style={[styles.buttonText, { color: theme.colors.background }]}>Home</Text>
       </TouchableOpacity>
-      <Text style={[styles.offlineText, { color: theme.colors.text }]}>If offline just click save once and press home</Text>
     </ScrollView>
   );
 };
@@ -231,50 +247,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: "5%",
   },
   title: {
-    textAlign: 'center',
-    marginVertical: 16,
+    marginBottom: 16,
   },
   input: {
     height: 40,
-    borderWidth: 1,
+    borderBottomWidth: 1,
+    marginBottom: 16,
     paddingHorizontal: 8,
-    marginVertical: 8,
   },
   priorityContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   label: {
-    fontSize: 16,
+    marginRight: 8,
   },
   priorityButton: {
     padding: 8,
     borderWidth: 1,
     borderRadius: 4,
+    marginRight: 8,
   },
   priorityButtonText: {
     fontSize: 16,
   },
   button: {
-    padding: 12,
+    padding: 16,
     borderRadius: 4,
     alignItems: 'center',
-    marginVertical: 8,
+    marginTop: 20,
   },
   buttonText: {
     fontSize: 16,
   },
-  offlineText: {
-    textAlign: 'center',
-    marginTop: 16,
-  },
   errorText: {
     color: 'red',
-    textAlign: 'center',
-    marginTop: 16,
   },
 });
 

@@ -40,7 +40,7 @@ const CalendarScreen = ({ navigation }) => {
       const tasksRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'tasks');
       const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
 
-      const incompleteTasksQuery = query(tasksRef, where('completed', '==', false));
+      const incompleteTasksQuery = query(tasksRef, where('isComplete', '==', false));
 
       const unsubscribeTasks = onSnapshot(incompleteTasksQuery, (querySnapshot) => {
         const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

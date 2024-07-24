@@ -56,7 +56,7 @@ const HomeScreen = ({ navigation }) => {
         const eventsRef = collection(firestore, 'users', userId, 'schedules', scheduleId, 'events');
       
         // Query for incomplete tasks
-        const incompleteTasksQuery = query(tasksRef, where('completed', '==', false));
+        const incompleteTasksQuery = query(tasksRef, where('isComplete', '==', false));
       
         const unsubscribeTasks = onSnapshot(incompleteTasksQuery, (querySnapshot) => {
           const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -290,11 +290,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   weekDayText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   currentWeekDayText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'center',
   },
 });
