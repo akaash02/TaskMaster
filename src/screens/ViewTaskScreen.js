@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { firestore } from '../config/firebaseConfig';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { Card } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -52,18 +52,95 @@ const ViewTaskScreen = ({ route, navigation }) => {
     fetchTask();
   }, [userId, scheduleId, taskId]);
 
-  const deleteTask = async () => {
+  const updateTaskCompleteField = async () => {
     try {
       const netInfo = await NetInfo.fetch();
       if (netInfo.isConnected) {
-        await deleteDoc(doc(firestore, 'users', userId, 'schedules', scheduleId, 'tasks', taskId));
+        const taskDocRef = doc(firestore, 'users', userId, 'schedules', scheduleId, 'tasks', taskId);
+        const taskSnap = await getDoc(taskDocRef);
+        if (taskSnap.exists()) {
+          const taskData = taskSnap.data();
+          const taskDuration = parseFloat(taskData.duration) || 0;
+
+          await updateDoc(taskDocRef, { isComplete: true });
+
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          const currentDay = new Date().getDate().toString();
+          const taskAnalyticsRef = doc(firestore, 'users', userId, 'analytics', 'analyticsData', 'taskAnalytics', currentMonth);
+          const taskAnalyticsSnap = await getDoc(taskAnalyticsRef);
+
+          if (taskAnalyticsSnap.exists()) {
+            const taskAnalyticsData = taskAnalyticsSnap.data();
+            const newHeatmap = taskAnalyticsData.heatmap || {};
+            newHeatmap[currentDay] = (newHeatmap[currentDay] || 0) + 1;
+
+            await updateDoc(taskAnalyticsRef, {
+              tasksCompleted: (taskAnalyticsData.tasksCompleted || 0) + 1,
+              hoursSpent: (parseFloat(taskAnalyticsData.hoursSpent) || 0) + taskDuration,
+              heatmap: newHeatmap,
+            });
+          } else {
+            await setDoc(taskAnalyticsRef, {
+              tasksCompleted: 1,
+              tasksDeleted: 0,
+              tasksTotal: 0,
+              hoursSpent: taskDuration,
+              heatmap: { [currentDay]: 1 },
+            });
+          }
+
+          setTask((prevTask) => ({
+            ...prevTask,
+            isComplete: true,
+          }));
+          await AsyncStorage.setItem(`task_${taskId}`, JSON.stringify({ ...taskData, isComplete: true }));
+        } else {
+          Alert.alert('Error', 'Task not found.');
+        }
       }
-      await AsyncStorage.removeItem(`task_${taskId}`);
-      navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Error deleting task. Please try again.');
+      Alert.alert('Error', 'Error updating task. Please try again.');
     }
   };
+
+  const updateDeleteTaskField = async () => {
+    try {
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        const taskDocRef = doc(firestore, 'users', userId, 'schedules', scheduleId, 'tasks', taskId);
+        await updateDoc(taskDocRef, { isComplete: true });
+
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const taskAnalyticsRef = doc(firestore, 'users', userId, 'analytics', 'analyticsData', 'taskAnalytics', currentMonth);
+        const taskAnalyticsSnap = await getDoc(taskAnalyticsRef);
+
+        if (taskAnalyticsSnap.exists()) {
+          const taskAnalyticsData = taskAnalyticsSnap.data();
+          await updateDoc(taskAnalyticsRef, {
+            tasksDeleted: (taskAnalyticsData.tasksDeleted || 0) + 1,
+          });
+        } else {
+          await setDoc(taskAnalyticsRef, {
+            tasksCompleted: 0,
+            tasksDeleted: 1,
+            tasksTotal: 0,
+            hoursSpent: 0,
+          });
+        }
+
+        setTask((prevTask) => ({
+          ...prevTask,
+          isComplete: true,
+        }));
+        await AsyncStorage.setItem(`task_${taskId}`, JSON.stringify({ ...task, isComplete: true }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Error updating task. Please try again.');
+    }
+  };
+
+  const completeTask = () => updateTaskCompleteField();
+  const deleteTask = () => updateDeleteTaskField();
 
   const formatDate = (timestamp) => {
     if (timestamp && typeof timestamp.toDate === 'function') {
@@ -112,14 +189,6 @@ const ViewTaskScreen = ({ route, navigation }) => {
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{task.priority || 'No priority'}</Text>
       </Card>
-      {task.repeat && (
-        <>
-          <Text style={[styles.header, { color: theme.colors.text }]}>Repeat Interval</Text>
-          <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
-            <Text style={[styles.text, { color: theme.colors.text }]}>{task.repeatInterval || 'No interval'}</Text>
-          </Card>
-        </>
-      )}
       <Text style={[styles.header, { color: theme.colors.text }]}>Deadline</Text>
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatDate(task.dueDate)}</Text>
@@ -132,21 +201,26 @@ const ViewTaskScreen = ({ route, navigation }) => {
       <Card containerStyle={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.text }]}>
         <Text style={[styles.text, { color: theme.colors.text }]}>{formatTime(task.endTime)}</Text>
       </Card>
-      <View style={styles.buttons}>
-        <CustomButton title="Edit Task" onPress={() => navigation.navigate('EditTask', { userId, scheduleId, taskId })} color={theme.colors.text} textColor={theme.colors.background} />
-        <CustomButton title="Delete Task" onPress={deleteTask} color="red" textColor="white" />
-        <CustomButton title="Home" onPress={() => navigation.navigate('Home')} color={theme.colors.text} textColor={theme.colors.background} />
-      </View>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={completeTask}>
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Complete Task</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.button, { backgroundColor: 'red' }]} onPress={deleteTask}>
+        <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Delete Task</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.text }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Home</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('EditTask', { userId, scheduleId, taskId })} style={[styles.button, { backgroundColor: theme.colors.text, marginBottom: 90 }]}>
+        <Text style={[styles.buttonText, { color: theme.colors.background }]}>Edit Task</Text>
+      </TouchableOpacity>
     </ScrollView>
-    
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
-    paddingLeft: 10,
+    padding: 16,
   },
   titleContainer: {
     paddingTop: 0,
@@ -160,35 +234,34 @@ const styles = StyleSheet.create({
     marginLeft: '3%',
   },
   header: {
-    fontSize: 20,
-    textAlign: 'left',
-    marginLeft: '3.5%',
-  },
-  card: {
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 20,
-    alignItems: 'left',
-    justifyContent: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
   text: {
     fontSize: 16,
-    marginBottom: 10,
+  },
+  card: {
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
   },
   buttons: {
+    flexDirection: 'column',
+    justifyContent: 'space-around',
     marginTop: 20,
-    alignItems: 'center',
-    marginBottom: "20%",
+    marginBottom: 20,
   },
   button: {
     padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    borderRadius: 4,
-    marginVertical: 8,
-    width: "90%",
+    marginTop: 20,
+    marginRight: '3.5%',
+    marginLeft: '3%',
   },
   buttonText: {
-    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet, ScrollView, Image } from 're
 import { useNavigation } from '@react-navigation/native';
 import { auth, firestore } from '../config/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection } from 'firebase/firestore';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -28,24 +28,37 @@ const LoginScreen = () => {
   }, [navigation]);
 
   const createUserProfile = async (user) => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
     try {
-      await setDoc(doc(firestore, 'users', user.uid), {
-        name: userName,
-        email: user.email,
-        profilePicture: '',
-        friends: [],
-        analytics: {
-          timeSpentOnTasks: {},
-          productiveHours: 0,
-          breaksTaken: 0,
-          averageCompletionTime: 0,
-        },
-      });
-      console.log('User profile created in Firestore!');
+        await setDoc(doc(firestore, 'users', user.uid), {
+            name: userName,
+            email: user.email,
+            profilePicture: '',
+            friends: [],
+        });
+
+        const analyticsDataRef = doc(firestore, 'users', user.uid, 'analytics', 'analyticsData');
+        await setDoc(analyticsDataRef, {});
+
+        const taskAnalyticsRef = doc(firestore, 'users', user.uid, 'analytics', 'analyticsData', 'taskAnalytics', currentMonth);
+        await setDoc(taskAnalyticsRef, {
+            tasksCompleted: 0,
+            tasksDeleted: 0,
+            tasksTotal: 0,
+            hoursSpent: 0,
+        });
+
+        const sleepAnalyticsRef = doc(firestore, 'users', user.uid, 'analytics', 'analyticsData', 'sleepAnalytics', currentMonth);
+        await setDoc(sleepAnalyticsRef, {
+            hoursSlept: 0,
+            daysWithProperSleep: 0,
+        });
+
+        console.log('User profile and analytics created in Firestore!');
     } catch (error) {
-      console.error('Error creating user profile: ', error.message);
+        console.error('Error creating user profile: ', error.message);
     }
-  };
+};
 
   const getUserProfile = async (userId) => {
     try {

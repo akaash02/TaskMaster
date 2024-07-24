@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from
 import { Text } from 'react-native-elements';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { firestore } from '../config/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { CommonActions } from '@react-navigation/native';
@@ -119,6 +119,25 @@ const TaskScreen = ({ navigation, route }) => {
         await addDoc(tasksCollectionRef, taskData);
         console.log('Task saved to firestore:', taskData);
         
+        // Increment tasksTotal in taskAnalytics for the current month
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const taskAnalyticsRef = doc(firestore, 'users', userId, 'analytics', 'analyticsData', 'taskAnalytics', currentMonth);
+        const taskAnalyticsSnap = await getDoc(taskAnalyticsRef);
+
+        if (taskAnalyticsSnap.exists()) {
+          const taskAnalyticsData = taskAnalyticsSnap.data();
+          await updateDoc(taskAnalyticsRef, {
+            tasksTotal: (taskAnalyticsData.tasksTotal || 0) + 1,
+          });
+        } else {
+          await setDoc(taskAnalyticsRef, {
+            tasksCompleted: 0,
+            tasksDeleted: 0,
+            tasksTotal: 1,
+            hoursSpent: 0,
+          });
+        }
+        
         // Call fetchAndScheduleTasks to schedule tasks after saving
         console.log('Calling fetchAndScheduleTasks');
         await fetchAndScheduleTasks(userId, scheduleId);
@@ -149,7 +168,7 @@ const TaskScreen = ({ navigation, route }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text h4 style={[styles.title, { color: theme.colors.text }]}>Create Task</Text>
+      <Text h1 style={[styles.title, { color: theme.colors.text }]}>Create Task</Text>
       <TextInput
         style={[styles.input, { borderColor: theme.colors.text, color: theme.colors.text }]}
         placeholder="Title"
@@ -214,15 +233,12 @@ const TaskScreen = ({ navigation, route }) => {
           <Text style={[styles.priorityButtonText, priority === 3 && { color: theme.colors.background }]}>High</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={handleSave} style={[styles.button, { backgroundColor: theme.colors.card }]}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleSave}>
         <Text style={[styles.buttonText, { color: theme.colors.buttonText }]}>Save Task</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate('Home')} style={[styles.button, { backgroundColor: theme.colors.text }]}>
         <Text style={[styles.buttonText, { color: theme.colors.background }]}>Home</Text>
       </TouchableOpacity>
-      <Text style={[styles.offlineText, { color: theme.colors.text }]}>
-        Note: Tasks will be saved locally if offline and synced once connected to the internet.
-      </Text>
     </ScrollView>
   );
 };
@@ -230,50 +246,43 @@ const TaskScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 16,
+    marginTop: "5%",
   },
   title: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   input: {
     height: 40,
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   priorityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
-    marginRight: 10,
+    marginRight: 8,
   },
   priorityButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 15,
+    padding: 8,
     borderWidth: 1,
-    borderColor: 'black',
-    borderRadius: 5,
-    marginRight: 10,
+    borderRadius: 4,
+    marginRight: 8,
   },
   priorityButtonText: {
-    color: 'black',
+    fontSize: 16,
   },
   button: {
-    height: 50,
-    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 4,
     alignItems: 'center',
-    borderRadius: 5,
-    marginBottom: 10,
+    marginTop: 20,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  offlineText: {
-    marginTop: 10,
-    fontStyle: 'italic',
+    fontSize: 16,
   },
   errorText: {
     color: 'red',

@@ -290,11 +290,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   weekDayText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   currentWeekDayText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'center',
   },
 });
