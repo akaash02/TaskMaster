@@ -92,6 +92,9 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('Sleep')}>
           <Text style={[styles.buttonText, { color: theme.colors.text }]}>Sleep</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.card }]} onPress={() => navigation.navigate('Analytics')}>
+          <Text style={[styles.buttonText, { color: theme.colors.text }]}>Analytics</Text>
+        </TouchableOpacity>
       </View>
       <NavBar navigation={navigation} userId={'yourUserId'} scheduleId={'yourScheduleId'} />
     </View>

@@ -18,8 +18,9 @@ import ViewEventScreen from '../screens/ViewEventScreen';
 import TimeSlotScreen from '../screens/TimeSlotScreen';
 import AddTimeSlotScreen from '../screens/AddTimeSlotScreen';
 import ChatScreen from '../screens/ChatScreen';
-import SleepScreen from '../screens/SleepScreen'; // Import the SleepScreen
-import AddSleepScreen from '../screens/AddSleepScreen'; // Import the AddSleepScreen
+import SleepScreen from '../screens/SleepScreen'; 
+import AddSleepScreen from '../screens/AddSleepScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -76,6 +77,7 @@ function AppNavigator() {
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Sleep" component={SleepScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AddSleep" component={AddSleepScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeContext.Provider>
