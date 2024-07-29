@@ -13,7 +13,6 @@ const AnalyticsScreen = () => {
   const navigation = useNavigation();
   const [selectedMetric, setSelectedMetric] = useState('tasks');
 
-  // Sample Data
   const taskOverviewData = [
     { name: 'Pending Tasks', population: 30, color: '#f39c12', legendFontColor: theme.colors.text, legendFontSize: 15 },
     { name: 'Completed Tasks', population: 50, color: '#2ecc71', legendFontColor: theme.colors.text, legendFontSize: 15 },
@@ -52,7 +51,6 @@ const AnalyticsScreen = () => {
     { day: 'Sun', hours: 7, month: 'Jan' },
     { day: 'Mon', hours: 6, month: 'Feb' },
     { day: 'Tue', hours: 5.5, month: 'Feb' },
-    // ...additional data
   ];
 
   const tasksHeatmapData = [
@@ -65,7 +63,6 @@ const AnalyticsScreen = () => {
     { day: 'Sun', tasks: 3, month: 'Jan' },
     { day: 'Mon', tasks: 2, month: 'Feb' },
     { day: 'Tue', tasks: 4, month: 'Feb' },
-    // ...additional data
   ];
 
   const getColorForHeatmap = (value, type) => {
@@ -99,10 +96,8 @@ const AnalyticsScreen = () => {
   };
 
   const renderHeatmap = (data, type) => {
-    // Get unique months from the data
     const months = [...new Set(data.map(d => d.month))];
   
-    // Helper function to chunk an array into rows of specified size
     const chunkArray = (arr, size) => {
       const result = [];
       for (let i = 0; i < arr.length; i += size) {
@@ -124,14 +119,13 @@ const AnalyticsScreen = () => {
         );
       });
   
-      // Prepend empty cells for days before the 1st of the month if needed
       const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay();
       const emptyCells = Array.from({ length: firstDayOfMonth }).map((_, index) => (
         <View key={`empty-${index}`} style={[styles.heatmapCell, { backgroundColor: 'transparent' }]} />
       ));
   
       const heatmapArray = [...emptyCells, ...daysArray];
-      const rows = chunkArray(heatmapArray, 7); // Chunk into weeks
+      const rows = chunkArray(heatmapArray, 7);
   
       return (
         <View style={styles.heatmapMonthContainer}>
