@@ -10,7 +10,7 @@ import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore'
 import { ThemeContext } from '../navigation/AppNavigator';
 import { darkTheme, lightTheme } from '../themes/ThemeIndex';
 import NavBar from '../components/NavBar';
-import { GoogleGenerativeAI } from "@google/generative-ai";  // Import the GoogleGenerativeAI package
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { G_API_KEY } from '@env';
 import { ScrollView } from 'react-native-gesture-handler';
 
@@ -47,14 +47,12 @@ const SleepScreen = ({ navigation }) => {
 
         console.log('Retrieved sleep data:', sleepDataList);
 
-        // Filter out any invalid data points
         const validSleepDataList = sleepDataList.filter(data =>
           data.hoursSlept > 0 && !isNaN(data.sleepQuality)
         );
 
         setSleepData(validSleepDataList);
 
-        // Check if there are at least 7 valid data points
         if (validSleepDataList.length < 7) {
           setError('Insufficient data to make predictions. Please add more sleep data.');
           setLoading(false);
@@ -107,7 +105,6 @@ const SleepScreen = ({ navigation }) => {
 
       console.log('Optimal schedule generated:', optimal);
 
-      // Set input schedule for Gemini feedback
       setInputSchedule(savedSchedule);
     } catch (err) {
       console.error('Error setting up model:', err);

@@ -3,7 +3,7 @@ import { View, FlatList, Text, TextInput, TouchableOpacity, StyleSheet } from 'r
 import { Header } from 'react-native-elements';
 import { ThemeContext } from '../navigation/AppNavigator';
 import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { firestore, auth } from '../config/firebaseConfig'; // Updated import
+import { firestore, auth } from '../config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 
 const ChatScreen = ({ route, navigation }) => {

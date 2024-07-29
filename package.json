@@ -6,8 +6,37 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest"
   },
+  "jest": {
+  "preset": "jest-expo",
+  "setupFilesAfterEnv": [
+    "./jest.setup.js"
+  ],
+  "moduleNameMapper": {
+    "^@env$": "identity-obj-proxy",
+    "^firebase/app$": "<rootDir>/__mocks__/firebase.js",
+    "^firebase/auth$": "<rootDir>/__mocks__/firebase.js",
+    "^firebase/firestore$": "<rootDir>/__mocks__/firebase.js",
+    "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/@react-native-async-storage/async-storage.js",
+    "^react-native-elements$": "<rootDir>/__mocks__/react-native-elements.js",
+    "^react-native-calendars$": "<rootDir>/__mocks__/react-native-calendars.js",
+    "^react-native-modal-datetime-picker$": "<rootDir>/__mocks__/react-native-modal-datetime-picker.js",
+    "^@react-native-community/datetimepicker$": "<rootDir>/__mocks__/@react-native-community/datetimepicker.js",
+    "^react-native-gesture-handler$": "<rootDir>/__mocks__/react-native-gesture-handler.js",
+    "^../../tensorflowModel$": "<rootDir>/__mocks__/tensorflowModel.js",
+    "^../../prepareData$": "<rootDir>/__mocks__/prepareData.js",
+    "^@tensorflow/tfjs$": "<rootDir>/__mocks__/@tensorflow/tfjs.js",
+    "^@tensorflow/tfjs-react-native$": "<rootDir>/__mocks__/@tensorflow/tfjs-react-native.js"
+  },
+  "transform": {
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(jest-)?react-native|@react-native|react-native|react-navigation|@react-navigation/.*|@unimodules|unimodules-.*|sentry-expo|native-base|expo(nent)?|@expo(nent)?|@expo-google-fonts|firebase|@firebase|@react-native-async-storage/async-storage|react-native-elements|react-native-calendars|react-native-modal-datetime-picker|@react-native-community/datetimepicker|react-native-gesture-handler)"
+  ]
+},
   "dependencies": {
     "@google/generative-ai": "^0.15.0",
     "@react-native-async-storage/async-storage": "1.23.1",
